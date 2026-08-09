@@ -1,0 +1,27 @@
+/* Print Media Queries for A4, 80mm POS, 58mm POS Receipts */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  #printable-bill-area,
+  #printable-bill-area * {
+    visibility: visible;
+  }
+  
+  #printable-bill-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12px;
+  }
+
+  @page {
+    margin: 5mm;
+  }
+}
