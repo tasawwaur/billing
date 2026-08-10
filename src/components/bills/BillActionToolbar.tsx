@@ -6,7 +6,7 @@ import { StoreSettings } from "@/types/store";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
-import { sendInvoiceWhatsApp, buildInvoiceMessage, getCleanIndianMobileDigits } from "@/lib/whatsapp";
+import { sendInvoiceWhatsApp, buildInvoiceMessage } from "@/lib/whatsapp";
 import { downloadInvoiceAsImage } from "@/lib/image-export";
 import { generateBillPDF } from "@/lib/pdf-export";
 import { MessageCircle, Image as ImageIcon, Download, Share2, Printer, Check, Send } from "lucide-react";
@@ -27,17 +27,12 @@ export const BillActionToolbar: React.FC<BillActionToolbarProps> = ({
   const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // WhatsApp Custom Number Modal state
+  // WhatsApp Custom Number Modal state (Always starts blank)
   const [isWaModalOpen, setIsWaModalOpen] = useState(false);
-
-  // Clean initial phone (extract 10 digits if available)
-  const initial10Digits = bill.customerPhone
-    ? getCleanIndianMobileDigits(bill.customerPhone).replace(/^91/, "")
-    : "";
-  const [targetPhone, setTargetPhone] = useState(initial10Digits);
+  const [targetPhone, setTargetPhone] = useState("");
 
   const handleOpenWaModal = () => {
-    setTargetPhone(initial10Digits);
+    setTargetPhone("");
     setIsWaModalOpen(true);
   };
 
