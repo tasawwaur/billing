@@ -50,7 +50,7 @@ export function buildInvoiceMessage(bill: Bill, settings: StoreSettings): string
     `📄 *TAX INVOICE - ${settings.storeName}*\n\n` +
     `Invoice No: *${bill.invoiceNo}*\n` +
     `Date: ${new Date(bill.date).toLocaleDateString("en-IN")}\n` +
-    `Customer: ${bill.customerName} (${normalizeIndianMobile(bill.customerPhone)})\n\n` +
+    `Customer: ${bill.customerName}\n\n` +
     `*Summary of Items:*\n${itemsText}\n\n` +
     `*Grand Total:* ₹${bill.calculation.grandTotal}\n` +
     `*Amount Paid:* ₹${bill.calculation.paidAmount}${dueText}\n\n` +
@@ -67,13 +67,13 @@ export function checkWhatsAppConfiguration(): { configured: boolean; mode: "DEMO
 }
 
 /**
- * Sends Invoice via WhatsApp instantly.
- * Direct WhatsApp chat launch for 10-digit Indian numbers without requiring +91 or 0 manual typing.
+ * Sends Invoice via WhatsApp instantly to any target phone number.
  */
-export function sendInvoiceWhatsApp(bill: Bill, settings: StoreSettings): void {
+export function sendInvoiceWhatsApp(bill: Bill, settings: StoreSettings, customPhone?: string): void {
   if (typeof window === "undefined") return;
 
-  const phoneDigits = getCleanIndianMobileDigits(bill.customerPhone);
+  const phoneToUse = customPhone || bill.customerPhone;
+  const phoneDigits = getCleanIndianMobileDigits(phoneToUse);
   const message = buildInvoiceMessage(bill, settings);
   const encodedMsg = encodeURIComponent(message);
 
