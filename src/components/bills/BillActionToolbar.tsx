@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Bill } from "@/types/bill";
 import { StoreSettings } from "@/types/store";
 import { Button } from "@/components/ui/Button";
-import { sendInvoiceWhatsApp } from "@/lib/whatsapp";
+import { sendInvoiceWhatsApp, buildInvoiceMessage } from "@/lib/whatsapp";
 import { downloadInvoiceAsImage } from "@/lib/image-export";
 import { generateBillPDF } from "@/lib/pdf-export";
 import { MessageCircle, Image as ImageIcon, Download, Share2, Printer, Check } from "lucide-react";
@@ -22,6 +22,7 @@ export const BillActionToolbar: React.FC<BillActionToolbarProps> = ({
 }) => {
   const [isPdfDownloading, setIsPdfDownloading] = useState(false);
   const [isImgDownloading, setIsImgDownloading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleDownloadPdf = async () => {
@@ -48,26 +49,50 @@ export const BillActionToolbar: React.FC<BillActionToolbarProps> = ({
   };
 
   const handleShare = async () => {
-    const text = `Tax Invoice ${bill.invoiceNo} from ${settings.storeName} for ₹${bill.calculation.grandTotal}`;
+    setIsSharing(true);
+    const invoiceMessage = buildInvoiceMessage(bill, settings);
+
+    // 1. Try sharing PDF File + Full Invoice Message via Web Share API
+    try {
+      const pdfResult = await generateBillPDF(bill, settings, elementId, false);
+      if (typeof navigator !== "undefined" && navigator.canShare && pdfResult?.file) {
+        if (navigator.canShare({ files: [pdfResult.file] })) {
+          await navigator.share({
+            title: `Tax Invoice ${bill.invoiceNo}`,
+            text: invoiceMessage,
+            files: [pdfResult.file],
+          });
+          setIsSharing(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("PDF file share fallback:", err);
+    }
+
+    // 2. Share Full Formatted Text Message via Web Share API
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: `Invoice ${bill.invoiceNo}`,
-          text,
-          url: window.location.href,
+          title: `Tax Invoice ${bill.invoiceNo}`,
+          text: invoiceMessage,
         });
+        setIsSharing(false);
         return;
       } catch (err) {
         console.log("Share dismissed");
       }
     }
 
+    // 3. Fallback: Copy Full Invoice Text to Clipboard
     try {
-      await navigator.clipboard.writeText(`${text}\n${window.location.href}`);
+      await navigator.clipboard.writeText(invoiceMessage);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 2500);
     } catch (err) {
       console.error("Clipboard error", err);
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -113,9 +138,10 @@ export const BillActionToolbar: React.FC<BillActionToolbarProps> = ({
         variant="secondary"
         size="sm"
         onClick={handleShare}
+        disabled={isSharing}
         icon={copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4 text-purple-400" />}
       >
-        {copied ? "Link Copied!" : "Share"}
+        {copied ? "Invoice Text Copied!" : isSharing ? "Preparing Share..." : "Share"}
       </Button>
 
       {/* 5. Print Button */}
