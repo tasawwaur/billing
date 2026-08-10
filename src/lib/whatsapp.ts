@@ -2,32 +2,41 @@ import { Bill } from "@/types/bill";
 import { StoreSettings } from "@/types/store";
 
 /**
- * Normalizes an Indian mobile number to standard +91 format.
- * Accepts formats: "8194030901", "08194030901", "918194030901", "+918194030901"
- * Returns "+918194030901"
+ * Cleanly extracts 12-digit Indian mobile number with country code 91.
+ * Accepts: "8194030901", "08194030901", "918194030901", "+91 8194030901"
+ * Output: "918194030901" (User only needs to enter 10 digits, 0 or +91 is not needed!)
  */
-export function normalizeIndianMobile(input: string): string {
+export function getCleanIndianMobileDigits(input: string): string {
   if (!input) return "";
-  const cleaned = input.replace(/[\s\-\(\)]/g, "");
-  const digitsOnly = cleaned.replace(/\D/g, "");
+  const rawDigits = input.replace(/\D/g, "");
 
-  if (digitsOnly.length === 10) {
-    return `+91${digitsOnly}`;
-  } else if (digitsOnly.length === 11 && digitsOnly.startsWith("0")) {
-    return `+91${digitsOnly.slice(1)}`;
-  } else if (digitsOnly.length === 12 && digitsOnly.startsWith("91")) {
-    return `+${digitsOnly}`;
-  } else if (cleaned.startsWith("+91") && digitsOnly.length === 12) {
-    return cleaned;
+  if (rawDigits.length === 10) {
+    return `91${rawDigits}`;
+  }
+  if (rawDigits.length === 11 && rawDigits.startsWith("0")) {
+    return `91${rawDigits.slice(1)}`;
+  }
+  if (rawDigits.length === 12 && rawDigits.startsWith("91")) {
+    return rawDigits;
+  }
+  if (rawDigits.length > 10) {
+    return `91${rawDigits.slice(-10)}`;
   }
 
-  return cleaned.startsWith("+") ? cleaned : `+91${digitsOnly}`;
+  return rawDigits ? `91${rawDigits}` : "";
+}
+
+export function normalizeIndianMobile(input: string): string {
+  const digits = getCleanIndianMobileDigits(input);
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return `+${digits}`;
+  }
+  return input;
 }
 
 export function validateIndianMobile(phone: string): boolean {
-  const normalized = normalizeIndianMobile(phone);
-  const numberPart = normalized.replace("+91", "");
-  return /^[6789]\d{9}$/.test(numberPart);
+  const digits = getCleanIndianMobileDigits(phone);
+  return digits.length === 12 && /^91[6789]\d{9}$/.test(digits);
 }
 
 export function buildInvoiceMessage(bill: Bill, settings: StoreSettings): string {
@@ -59,37 +68,21 @@ export function checkWhatsAppConfiguration(): { configured: boolean; mode: "DEMO
 
 /**
  * Sends Invoice via WhatsApp instantly.
- * Direct WhatsApp chat launch pre-filled with customer phone number and formatted tax invoice summary.
- * Uses official web.whatsapp.com on Desktop and api.whatsapp.com on Mobile.
- * Includes automatic popup blocker fallback.
+ * Direct WhatsApp chat launch for 10-digit Indian numbers without requiring +91 or 0 manual typing.
  */
 export function sendInvoiceWhatsApp(bill: Bill, settings: StoreSettings): void {
   if (typeof window === "undefined") return;
 
-  const normalizedPhone = normalizeIndianMobile(bill.customerPhone);
-  const digitsOnly = normalizedPhone.replace(/\D/g, ""); // e.g. "919876543210"
+  const phoneDigits = getCleanIndianMobileDigits(bill.customerPhone);
   const message = buildInvoiceMessage(bill, settings);
   const encodedMsg = encodeURIComponent(message);
 
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
+  const waUrl = phoneDigits
+    ? `https://wa.me/${phoneDigits}?text=${encodedMsg}`
+    : `https://wa.me/?text=${encodedMsg}`;
 
-  let waUrl = "";
-  if (digitsOnly && digitsOnly.length >= 10) {
-    waUrl = isMobile
-      ? `https://api.whatsapp.com/send?phone=${digitsOnly}&text=${encodedMsg}`
-      : `https://web.whatsapp.com/send?phone=${digitsOnly}&text=${encodedMsg}`;
-  } else {
-    waUrl = isMobile
-      ? `https://api.whatsapp.com/send?text=${encodedMsg}`
-      : `https://web.whatsapp.com/send?text=${encodedMsg}`;
-  }
-
-  // 1. Try opening new tab
+  // Direct open with popup blocker fallback
   const win = window.open(waUrl, "_blank");
-
-  // 2. Popup blocker fallback
   if (!win || win.closed || typeof win.closed === "undefined") {
     window.location.href = waUrl;
   }
