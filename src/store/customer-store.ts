@@ -5,10 +5,13 @@ import { getStorageItem, setStorageItem } from "@/lib/storage";
 
 interface CustomerStore {
   customers: Customer[];
-  addCustomer: (customer: Omit<Customer, "id" | "totalBills" | "totalSpent" | "dueBalance" | "createdAt">) => Customer;
+  addCustomer: (customer: Omit<Customer, "id" | "totalBills" | "totalSpent" | "dueBalance" | "denaBalance" | "createdAt">) => Customer;
   updateCustomer: (id: string, updated: Partial<Customer>) => void;
   recordPurchase: (customerId: string, spentAmount: number, dueAmount: number) => void;
   recordPayment: (customerId: string, paidAmount: number) => void;
+  recordDenaPayment: (customerId: string, paidAmount: number) => void;
+  recordAddDena: (customerId: string, amount: number) => void;
+  recordAddDue: (customerId: string, amount: number) => void;
   resetCustomers: () => void;
 }
 
@@ -21,6 +24,7 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
       totalBills: 0,
       totalSpent: 0,
       dueBalance: 0,
+      denaBalance: 0,
       createdAt: new Date().toISOString().split("T")[0],
     };
     const updated = [newCustomer, ...get().customers];
@@ -59,6 +63,48 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
           return {
             ...c,
             dueBalance: Math.max(0, c.dueBalance - paidAmount),
+          };
+        }
+        return c;
+      });
+      setStorageItem("luxury_customers", updated);
+      return { customers: updated };
+    }),
+  recordDenaPayment: (customerId, paidAmount) =>
+    set((state) => {
+      const updated = state.customers.map((c) => {
+        if (c.id === customerId) {
+          return {
+            ...c,
+            denaBalance: Math.max(0, (c.denaBalance || 0) - paidAmount),
+          };
+        }
+        return c;
+      });
+      setStorageItem("luxury_customers", updated);
+      return { customers: updated };
+    }),
+  recordAddDena: (customerId, amount) =>
+    set((state) => {
+      const updated = state.customers.map((c) => {
+        if (c.id === customerId) {
+          return {
+            ...c,
+            denaBalance: (c.denaBalance || 0) + amount,
+          };
+        }
+        return c;
+      });
+      setStorageItem("luxury_customers", updated);
+      return { customers: updated };
+    }),
+  recordAddDue: (customerId, amount) =>
+    set((state) => {
+      const updated = state.customers.map((c) => {
+        if (c.id === customerId) {
+          return {
+            ...c,
+            dueBalance: c.dueBalance + amount,
           };
         }
         return c;

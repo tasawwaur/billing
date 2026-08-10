@@ -16,8 +16,9 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { BillTemplateA4 } from "@/components/bills/BillTemplateA4";
 import { calculateInvoice } from "@/lib/invoice";
-import { Printer, CheckCircle2, MessageCircle } from "lucide-react";
+import { Printer, CheckCircle2, MessageCircle, Image as ImageIcon } from "lucide-react";
 import { sendInvoiceWhatsApp } from "@/lib/whatsapp";
+import { downloadInvoiceAsImage } from "@/lib/image-export";
 import { Bill } from "@/types/bill";
 import { formatCurrency } from "@/lib/currency";
 
@@ -156,10 +157,18 @@ export const BillingForm: React.FC = () => {
                 <Button
                   variant="secondary"
                   size="sm"
+                  onClick={() => downloadInvoiceAsImage(generatedBill.invoiceNo, generatedBill.customerName)}
+                  icon={<ImageIcon className="w-4 h-4 text-amber-400" />}
+                >
+                  Download Image PNG
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => sendInvoiceWhatsApp(generatedBill, settings)}
                   icon={<MessageCircle className="w-4 h-4 text-emerald-400" />}
                 >
-                  Send PDF on WhatsApp
+                  WhatsApp
                 </Button>
                 <Button variant="gold" size="sm" onClick={handlePrintGeneratedBill} icon={<Printer className="w-4 h-4" />}>
                   Print / Save PDF

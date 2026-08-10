@@ -30,7 +30,9 @@ import {
   ArrowUpRight,
   Eye,
   MessageCircle,
+  Image as ImageIcon,
 } from "lucide-react";
+import { downloadInvoiceAsImage } from "@/lib/image-export";
 
 interface CustomerAccountDrawerProps {
   customer: Customer | null;
@@ -46,7 +48,7 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
   const router = useRouter();
   const { bills, setCustomer } = useBillingStore();
   const { ledger, payments, addLedgerEntry, addPaymentRecord } = useLedgerStore();
-  const { recordPayment } = useCustomerStore();
+  const { recordPayment, recordDenaPayment } = useCustomerStore();
   const { settings } = useSettingsStore();
 
   const [activeTab, setActiveTab] = useState<"purchases" | "payments" | "ledger">("purchases");
@@ -54,6 +56,7 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
   const [selectedBillForPreview, setSelectedBillForPreview] = useState<Bill | null>(null);
 
   // Payment Form State
+  const [payType, setPayType] = useState<"RECEIVE_LENA" | "PAY_DENA">("RECEIVE_LENA");
   const [payAmount, setPayAmount] = useState(0);
   const [payMethod, setPayMethod] = useState<"CASH" | "UPI" | "CARD" | "BANK_TRANSFER">("UPI");
   const [payRef, setPayRef] = useState("");
@@ -68,7 +71,7 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
   const totalPurchase = customer.totalSpent || customerBills.reduce((sum, b) => sum + b.calculation.grandTotal, 0);
   const totalPaid = customerPayments.reduce((sum, p) => sum + p.amount, 0) || Math.max(0, totalPurchase - customer.dueBalance);
   const lenaHai = customer.dueBalance;
-  const denaHai = 0;
+  const denaHai = customer.denaBalance || 0;
   const netBalance = lenaHai - denaHai;
 
   const handleNewBill = () => {
@@ -81,28 +84,55 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
     e.preventDefault();
     if (!payAmount || payAmount <= 0) return;
 
-    recordPayment(customer.id, payAmount);
-    
-    addLedgerEntry({
-      partyId: customer.id,
-      partyName: customer.name,
-      partyType: "CUSTOMER",
-      type: "CREDIT",
-      amount: payAmount,
-      runningBalance: Math.max(0, lenaHai - payAmount),
-      referenceNo: payRef || `PAY-${Date.now().toString().slice(-6)}`,
-      description: `Payment received via ${payMethod}`,
-    });
+    if (payType === "RECEIVE_LENA") {
+      recordPayment(customer.id, payAmount);
+      
+      addLedgerEntry({
+        partyId: customer.id,
+        partyName: customer.name,
+        partyType: "CUSTOMER",
+        type: "CREDIT",
+        amount: payAmount,
+        runningBalance: Math.max(0, lenaHai - payAmount),
+        referenceNo: payRef || `REC-${Date.now().toString().slice(-6)}`,
+        description: `Payment received via ${payMethod} (Lena Hai Settlement)`,
+      });
 
-    addPaymentRecord({
-      billId: customerBills[0]?.id || `bill-${Date.now()}`,
-      invoiceNo: customerBills[0]?.invoiceNo || "DIRECT-REC",
-      customerId: customer.id,
-      customerName: customer.name,
-      amount: payAmount,
-      method: payMethod,
-      referenceNo: payRef || `REC-${Date.now().toString().slice(-6)}`,
-    });
+      addPaymentRecord({
+        billId: customerBills[0]?.id || `bill-${Date.now()}`,
+        invoiceNo: customerBills[0]?.invoiceNo || "DIRECT-REC",
+        customerId: customer.id,
+        customerName: customer.name,
+        amount: payAmount,
+        method: payMethod,
+        type: "RECEIVED",
+        referenceNo: payRef || `REC-${Date.now().toString().slice(-6)}`,
+      });
+    } else {
+      recordDenaPayment(customer.id, payAmount);
+
+      addLedgerEntry({
+        partyId: customer.id,
+        partyName: customer.name,
+        partyType: "CUSTOMER",
+        type: "DEBIT",
+        amount: payAmount,
+        runningBalance: Math.max(0, denaHai - payAmount),
+        referenceNo: payRef || `PAY-${Date.now().toString().slice(-6)}`,
+        description: `Payment paid to customer via ${payMethod} (Dena Hai Settlement)`,
+      });
+
+      addPaymentRecord({
+        billId: `settle-${Date.now()}`,
+        invoiceNo: "DENA-SETTLE",
+        customerId: customer.id,
+        customerName: customer.name,
+        amount: payAmount,
+        method: payMethod,
+        type: "PAID",
+        referenceNo: payRef || `PAY-${Date.now().toString().slice(-6)}`,
+      });
+    }
 
     setShowPaymentModal(false);
     setPayAmount(0);
@@ -364,25 +394,81 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
         </div>
       </div>
 
-      {/* Add Payment Modal */}
-      <Modal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} title={`Record Payment - ${customer.name}`}>
-        <form onSubmit={handleSavePayment} className="space-y-3">
-          <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs flex justify-between">
-            <span className="text-slate-300">Current Lena Hai (Due Balance):</span>
-            <span className="font-extrabold text-rose-400">{formatCurrency(lenaHai)}</span>
+      {/* Add Payment / Settlement Modal */}
+      <Modal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} title={`💳 Account Payment & Settlement - ${customer.name}`}>
+        <form onSubmit={handleSavePayment} className="space-y-4">
+          {/* Payment Direction Toggle */}
+          <div className="grid grid-cols-2 gap-2 bg-obsidian-900 p-1.5 rounded-xl border border-gold-500/20">
+            <button
+              type="button"
+              onClick={() => {
+                setPayType("RECEIVE_LENA");
+                setPayAmount(lenaHai > 0 ? lenaHai : 0);
+              }}
+              className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                payType === "RECEIVE_LENA"
+                  ? "bg-emerald-500 text-slate-950 shadow-md font-extrabold"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <span>📥 Receive Payment (Lena)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPayType("PAY_DENA");
+                setPayAmount(denaHai > 0 ? denaHai : 0);
+              }}
+              className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                payType === "PAY_DENA"
+                  ? "bg-blue-500 text-slate-950 shadow-md font-extrabold"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <span>📤 Pay Customer (Dena)</span>
+            </button>
           </div>
 
+          {/* Current & New Balance Banner */}
+          {payType === "RECEIVE_LENA" ? (
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-slate-300">Current Lena Balance (Due):</span>
+                <span className="font-extrabold text-emerald-400">{formatCurrency(lenaHai)}</span>
+              </div>
+              <div className="flex justify-between font-bold border-t border-emerald-500/20 pt-1">
+                <span className="text-slate-400">Remaining Lena Due After Payment:</span>
+                <span className="font-mono text-emerald-300">
+                  {formatCurrency(Math.max(0, lenaHai - (payAmount || 0)))}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-slate-300">Current Dena Balance (Payable):</span>
+                <span className="font-extrabold text-blue-400">{formatCurrency(denaHai)}</span>
+              </div>
+              <div className="flex justify-between font-bold border-t border-blue-500/20 pt-1">
+                <span className="text-slate-400">Remaining Dena Balance After Payment:</span>
+                <span className="font-mono text-blue-300">
+                  {formatCurrency(Math.max(0, denaHai - (payAmount || 0)))}
+                </span>
+              </div>
+            </div>
+          )}
+
           <Input
-            label="Payment Amount (₹) *"
+            label={payType === "RECEIVE_LENA" ? "Amount Received (₹) *" : "Amount Paid to Customer (₹) *"}
             type="number"
             value={payAmount || ""}
             onChange={(e) => setPayAmount(Number(e.target.value))}
-            placeholder="Enter received amount"
+            placeholder={payType === "RECEIVE_LENA" ? "e.g. 500" : "e.g. 3000"}
             required
           />
 
           <Select
-            label="Payment Method"
+            label="Payment Mode"
             value={payMethod}
             onChange={(e) => setPayMethod(e.target.value as any)}
             options={[
@@ -397,15 +483,21 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
             label="Transaction Reference / Note (Optional)"
             value={payRef}
             onChange={(e) => setPayRef(e.target.value)}
-            placeholder="e.g. UPI/987123/PAY"
+            placeholder="e.g. Settlement notes / UTR number"
           />
 
           <div className="flex gap-2 pt-2">
             <Button variant="secondary" onClick={() => setShowPaymentModal(false)} className="flex-1">
               Cancel
             </Button>
-            <Button variant="gold" type="submit" className="flex-1 font-bold">
-              Save Payment ({formatCurrency(payAmount)})
+            <Button
+              variant={payType === "RECEIVE_LENA" ? "gold" : "primary"}
+              type="submit"
+              className="flex-1 font-bold"
+            >
+              {payType === "RECEIVE_LENA"
+                ? `Receive ${formatCurrency(payAmount)}`
+                : `Pay ${formatCurrency(payAmount)}`}
             </Button>
           </div>
         </form>
@@ -420,14 +512,22 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
           maxWidth="2xl"
         >
           <div className="space-y-4">
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => downloadInvoiceAsImage(selectedBillForPreview.invoiceNo, selectedBillForPreview.customerName)}
+                icon={<ImageIcon className="w-4 h-4 text-amber-400" />}
+              >
+                Download Image PNG
+              </Button>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => sendInvoiceWhatsApp(selectedBillForPreview, settings)}
                 icon={<MessageCircle className="w-4 h-4 text-emerald-400" />}
               >
-                Send PDF on WhatsApp
+                WhatsApp
               </Button>
               <Button variant="gold" size="sm" onClick={() => window.print()} icon={<Printer className="w-4 h-4" />}>
                 Print Invoice

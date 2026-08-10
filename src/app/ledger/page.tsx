@@ -15,11 +15,12 @@ import { Badge } from "@/components/ui/Badge";
 import { BillTemplateA4 } from "@/components/bills/BillTemplateA4";
 import { CustomerAccountDrawer } from "@/components/customers/CustomerAccountDrawer";
 import { SupplierAccountDrawer } from "@/components/ledger/SupplierAccountDrawer";
-import { BookOpen, Plus, ArrowDownLeft, ArrowUpRight, Printer, Search, MessageCircle, Eye, User, Phone, CheckCircle2, ListFilter, Building } from "lucide-react";
+import { BookOpen, Plus, ArrowDownLeft, ArrowUpRight, Printer, Search, MessageCircle, Eye, User, Phone, CheckCircle2, ListFilter, Building, Image as ImageIcon } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { Bill } from "@/types/bill";
 import { Customer } from "@/types/customer";
 import { sendInvoiceWhatsApp } from "@/lib/whatsapp";
+import { downloadInvoiceAsImage } from "@/lib/image-export";
 
 export default function LedgerPage() {
   const { ledger, addLedgerEntry } = useLedgerStore();
@@ -454,14 +455,22 @@ export default function LedgerPage() {
           maxWidth="2xl"
         >
           <div className="space-y-4">
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => downloadInvoiceAsImage(selectedBill.invoiceNo, selectedBill.customerName)}
+                icon={<ImageIcon className="w-4 h-4 text-amber-400" />}
+              >
+                Download Image PNG
+              </Button>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => sendInvoiceWhatsApp(selectedBill, settings)}
                 icon={<MessageCircle className="w-4 h-4 text-emerald-400" />}
               >
-                Send PDF on WhatsApp
+                WhatsApp
               </Button>
               <Button variant="gold" size="sm" onClick={() => window.print()} icon={<Printer className="w-4 h-4" />}>
                 Print Invoice

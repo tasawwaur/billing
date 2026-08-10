@@ -13,5 +13,6 @@ export interface PaymentRecord {
   date: string;
   status: PaymentStatus;
   notes?: string;
+  type?: 'RECEIVED' | 'PAID';
   createdAt: string;
 }

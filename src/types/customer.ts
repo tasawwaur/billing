@@ -7,6 +7,7 @@ export interface Customer {
   gstin?: string;
   totalBills: number;
   totalSpent: number;
-  dueBalance: number;
+  dueBalance: number; // Lena Hai
+  denaBalance?: number; // Dena Hai
   createdAt: string;
 }

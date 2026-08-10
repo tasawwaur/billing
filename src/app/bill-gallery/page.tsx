@@ -236,6 +236,7 @@ export default function BillGalleryPage() {
               >
                 <span>{f.label}</span>
                 <span
+                  suppressHydrationWarning
                   className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                     isActive
                       ? "bg-obsidian-950/20 text-obsidian-950 font-extrabold"
@@ -342,7 +343,7 @@ export default function BillGalleryPage() {
       {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between glass-panel p-3 rounded-xl border border-gold-500/15 text-xs">
-          <span className="text-slate-400">
+          <span className="text-slate-400" suppressHydrationWarning>
             Showing Page <strong className="text-slate-200">{currentPage}</strong> of{" "}
             <strong className="text-slate-200">{totalPages}</strong> ({filteredBills.length} total records)
           </span>
@@ -382,10 +383,10 @@ export default function BillGalleryPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => downloadInvoiceAsImage(selectedBill.invoiceNo)}
-                icon={<ImageIcon className="w-4 h-4" />}
+                onClick={() => downloadInvoiceAsImage(selectedBill.invoiceNo, selectedBill.customerName)}
+                icon={<ImageIcon className="w-4 h-4 text-amber-400" />}
               >
-                Image PNG
+                Download Image PNG
               </Button>
               <Button
                 variant="secondary"
