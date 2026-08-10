@@ -1,6 +1,97 @@
 import { Bill } from "@/types/bill";
 import { StoreSettings } from "@/types/store";
 
+function getOrCreateBillElement(
+  bill: Bill,
+  settings: StoreSettings,
+  elementId: string
+): { element: HTMLElement; temporary: boolean } {
+  if (typeof document === "undefined") {
+    throw new Error("Document is undefined");
+  }
+
+  const existing = document.getElementById(elementId);
+  if (existing) {
+    return { element: existing, temporary: false };
+  }
+
+  const itemsRows = bill.items
+    .map(
+      (item) => `
+    <tr style="border-bottom: 1px solid #eee;">
+      <td style="padding: 10px; text-align: left;">${item.productName}</td>
+      <td style="padding: 10px; text-align: center;">${item.quantity}</td>
+      <td style="padding: 10px; text-align: right;">₹${item.price.toLocaleString("en-IN")}</td>
+      <td style="padding: 10px; text-align: right;">₹${item.total.toLocaleString("en-IN")}</td>
+    </tr>
+  `
+    )
+    .join("");
+
+  const tempContainer = document.createElement("div");
+  tempContainer.id = "temp-pdf-export-container";
+  tempContainer.style.position = "absolute";
+  tempContainer.style.left = "-9999px";
+  tempContainer.style.top = "-9999px";
+  tempContainer.style.width = "794px";
+  tempContainer.style.backgroundColor = "#ffffff";
+  tempContainer.style.color = "#111111";
+  tempContainer.style.fontFamily = "'Helvetica Neue', Arial, sans-serif";
+  tempContainer.style.padding = "32px";
+
+  tempContainer.innerHTML = `
+    <div style="border: 2px solid #d4af37; padding: 28px; border-radius: 12px; background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 16px;">
+        <div>
+          <h1 style="margin: 0; color: #111111; font-size: 24px; font-weight: 800; letter-spacing: 1px;">${settings.storeName.toUpperCase()}</h1>
+          <p style="margin: 4px 0 0; color: #555555; font-size: 12px;">${settings.address}</p>
+          <p style="margin: 2px 0 0; color: #555555; font-size: 12px;">GSTIN: ${settings.gstin || "N/A"} | Ph: ${settings.phone}</p>
+        </div>
+        <div style="text-align: right;">
+          <h2 style="margin: 0; color: #d4af37; font-size: 20px; font-weight: bold;">TAX INVOICE</h2>
+          <p style="margin: 4px 0 0; font-size: 14px; font-weight: bold;"># ${bill.invoiceNo}</p>
+          <p style="margin: 2px 0 0; font-size: 12px; color: #555555;">Date: ${new Date(bill.date).toLocaleDateString("en-IN")}</p>
+        </div>
+      </div>
+
+      <div style="margin: 16px 0; padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 12px;">
+        <p style="margin: 0;"><strong>Billed To:</strong> ${bill.customerName}</p>
+        <p style="margin: 4px 0 0;"><strong>Phone:</strong> ${bill.customerPhone}</p>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 12px;">
+        <thead>
+          <tr style="background: #0f172a; color: #ffffff;">
+            <th style="padding: 10px; text-align: left;">Item Description</th>
+            <th style="padding: 10px; text-align: center;">Qty</th>
+            <th style="padding: 10px; text-align: right;">Rate</th>
+            <th style="padding: 10px; text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsRows}
+        </tbody>
+      </table>
+
+      <div style="display: flex; justify-content: space-between; border-top: 2px solid #d4af37; padding-top: 16px; margin-top: 16px; font-size: 13px;">
+        <div>
+          <p style="margin: 0; font-size: 11px; color: #555555;">Payment Mode: <strong>${bill.paymentMethod}</strong></p>
+          <p style="margin: 4px 0 0; font-size: 11px; color: #555555;">Status: <strong>${bill.paymentStatus}</strong></p>
+        </div>
+        <div style="text-align: right;">
+          <p style="margin: 0;">Subtotal: <strong>₹${bill.calculation.subtotal.toLocaleString("en-IN")}</strong></p>
+          ${bill.calculation.discount > 0 ? `<p style="margin: 2px 0 0; color: #e11d48;">Discount: -₹${bill.calculation.discount.toLocaleString("en-IN")}</p>` : ""}
+          ${bill.calculation.totalTax > 0 ? `<p style="margin: 2px 0 0;">GST Tax: ₹${bill.calculation.totalTax.toLocaleString("en-IN")}</p>` : ""}
+          <h3 style="margin: 8px 0 0; font-size: 18px; color: #d4af37;">Grand Total: ₹${bill.calculation.grandTotal.toLocaleString("en-IN")}</h3>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(tempContainer);
+  return { element: tempContainer, temporary: true };
+}
+
 export async function generateBillPDF(
   bill: Bill,
   settings: StoreSettings,
@@ -16,113 +107,57 @@ export async function generateBillPDF(
     ? `${bill.invoiceNo}_${cleanCustName}_Tax_Invoice.pdf`
     : `${bill.invoiceNo}_Tax_Invoice.pdf`;
 
-  // Try using html2canvas + jsPDF if available
+  let elementInfo: { element: HTMLElement; temporary: boolean } | null = null;
+
   try {
+    elementInfo = getOrCreateBillElement(bill, settings, elementId);
     const html2canvasModule = await import("html2canvas").catch(() => null);
     const jsPDFModule = await import("jspdf").catch(() => null);
 
-    if (html2canvasModule && jsPDFModule) {
+    if (html2canvasModule && jsPDFModule && elementInfo?.element) {
       const html2canvas = html2canvasModule.default || html2canvasModule;
       const jsPDF = jsPDFModule.jsPDF || jsPDFModule.default || jsPDFModule;
 
-      const element = document.getElementById(elementId);
-      if (element) {
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-        });
+      const canvas = await html2canvas(elementInfo.element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
 
-        const imgData = canvas.toDataURL("image/jpeg", 0.98);
-        const pdf = new jsPDF({
-          orientation: "portrait",
-          unit: "mm",
-          format: "a4",
-        });
+      const imgData = canvas.toDataURL("image/jpeg", 0.98);
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
 
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
 
-        const blob = pdf.output("blob");
-        const file = new File([blob], fileName, { type: "application/pdf" });
+      const blob = pdf.output("blob");
+      const file = new File([blob], fileName, { type: "application/pdf" });
 
-        if (downloadFile) {
-          pdf.save(fileName);
-        }
-
-        return { file, blob, fileName };
+      if (downloadFile) {
+        pdf.save(fileName);
       }
+
+      if (elementInfo.temporary && elementInfo.element.parentNode) {
+        elementInfo.element.parentNode.removeChild(elementInfo.element);
+      }
+
+      return { file, blob, fileName };
     }
   } catch (err) {
-    console.warn("jsPDF dynamic load error, using SVG Blob fallback:", err);
+    console.warn("jsPDF error, cleaning up and returning fallback:", err);
+  } finally {
+    if (elementInfo?.temporary && elementInfo.element.parentNode) {
+      elementInfo.element.parentNode.removeChild(elementInfo.element);
+    }
   }
 
-  // Fallback: Generate SVG / Canvas PDF Blob
-  const element = document.getElementById(elementId);
-  const htmlContent = element
-    ? element.outerHTML
-    : `
-    <div style="font-family: Arial, sans-serif; padding: 30px; color: #111;">
-      <h1 style="color: #d4af37;">${settings.storeName} - TAX INVOICE</h1>
-      <p>Invoice No: <strong>${bill.invoiceNo}</strong></p>
-      <p>Date: ${new Date(bill.date).toLocaleDateString("en-IN")}</p>
-      <p>Customer: ${bill.customerName} (${bill.customerPhone})</p>
-      <hr/>
-      <h3>Grand Total: ₹${bill.calculation.grandTotal.toLocaleString("en-IN")}</h3>
-    </div>
-  `;
-
-  const width = 800;
-  const height = 1130;
-  const svgString = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-      <foreignObject width="100%" height="100%">
-        <div xmlns="http://www.w3.org/1999/xhtml">
-          ${htmlContent}
-        </div>
-      </foreignObject>
-    </svg>
-  `;
-
-  const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(svgBlob);
-
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const pdfFile = new File([blob], fileName, { type: "application/pdf" });
-
-            if (downloadFile) {
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(blob);
-              a.download = fileName;
-              a.click();
-            }
-
-            resolve({ file: pdfFile, blob, fileName });
-          } else {
-            resolve(null);
-          }
-          URL.revokeObjectURL(url);
-        }, "application/pdf");
-      } else {
-        resolve(null);
-      }
-    };
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
+  return null;
 }

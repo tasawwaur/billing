@@ -60,21 +60,34 @@ export function checkWhatsAppConfiguration(): { configured: boolean; mode: "DEMO
 
 /**
  * Sends Invoice via WhatsApp.
- * Direct PDF Document sharing on supported devices/mobiles via Web Share API.
- * Launches WhatsApp Web with pre-filled customer details on desktop.
+ * Direct PDF Document sharing on supported mobile devices via Web Share API.
+ * Opens WhatsApp Web directly on Desktop Vercel deployments without popup blocker issues.
  */
 export async function sendInvoiceWhatsApp(bill: Bill, settings: StoreSettings): Promise<void> {
   const normalizedPhone = normalizeIndianMobile(bill.customerPhone);
   const rawNumber = normalizedPhone.replace("+", "");
   const message = buildInvoiceMessage(bill, settings);
+  const encodedMsg = encodeURIComponent(message);
+  const waUrl = `https://wa.me/${rawNumber}?text=${encodedMsg}`;
 
-  // 1. Generate PDF File object in memory (without forced download)
-  const pdfResult = await generateBillPDF(bill, settings, "printable-bill-area", false);
+  const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  // 2. Mobile / Web Share API (Direct PDF File sharing on supported devices)
-  if (typeof navigator !== "undefined" && navigator.canShare && pdfResult?.file) {
-    try {
+  // On desktop, pre-open window synchronously to prevent Vercel HTTPS popup blockers
+  let desktopWin: Window | null = null;
+  if (!isMobile && typeof window !== "undefined") {
+    desktopWin = window.open("about:blank", "_blank");
+  }
+
+  try {
+    // Generate PDF file in memory
+    const pdfResult = await generateBillPDF(bill, settings, "printable-bill-area", false);
+
+    // If Web Share API is supported (e.g. Mobile Android/iOS), share PDF file directly
+    if (typeof navigator !== "undefined" && navigator.canShare && pdfResult?.file) {
       if (navigator.canShare({ files: [pdfResult.file] })) {
+        if (desktopWin && !desktopWin.closed) {
+          desktopWin.close();
+        }
         await navigator.share({
           title: `Tax Invoice PDF - ${bill.invoiceNo}`,
           text: message,
@@ -82,13 +95,17 @@ export async function sendInvoiceWhatsApp(bill: Bill, settings: StoreSettings): 
         });
         return;
       }
-    } catch (err) {
-      console.log("Web share dismissed, opening WhatsApp Web link");
     }
+  } catch (err) {
+    console.warn("PDF generation / share fallback:", err);
   }
 
-  // 3. Desktop WhatsApp Web direct link:
-  const encodedMsg = encodeURIComponent(message);
-  const waUrl = `https://wa.me/${rawNumber}?text=${encodedMsg}`;
-  window.open(waUrl, "_blank");
+  // Navigate to WhatsApp
+  if (isMobile) {
+    window.location.href = waUrl;
+  } else if (desktopWin && !desktopWin.closed) {
+    desktopWin.location.href = waUrl;
+  } else if (typeof window !== "undefined") {
+    window.open(waUrl, "_blank");
+  }
 }
