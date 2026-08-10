@@ -36,10 +36,10 @@ export const BillActionToolbar: React.FC<BillActionToolbarProps> = ({
     setIsWaModalOpen(true);
   };
 
-  const handleSendWa = (e: React.FormEvent) => {
+  const handleSendWa = async (e: React.FormEvent) => {
     e.preventDefault();
-    sendInvoiceWhatsApp(bill, settings, targetPhone);
     setIsWaModalOpen(false);
+    await sendInvoiceWhatsApp(bill, settings, targetPhone, elementId);
   };
 
   const handleDownloadPdf = async () => {
