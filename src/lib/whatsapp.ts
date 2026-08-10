@@ -60,18 +60,37 @@ export function checkWhatsAppConfiguration(): { configured: boolean; mode: "DEMO
 /**
  * Sends Invoice via WhatsApp instantly.
  * Direct WhatsApp chat launch pre-filled with customer phone number and formatted tax invoice summary.
+ * Uses official web.whatsapp.com on Desktop and api.whatsapp.com on Mobile.
+ * Includes automatic popup blocker fallback.
  */
 export function sendInvoiceWhatsApp(bill: Bill, settings: StoreSettings): void {
   if (typeof window === "undefined") return;
 
   const normalizedPhone = normalizeIndianMobile(bill.customerPhone);
-  const rawNumber = normalizedPhone.replace("+", "");
+  const digitsOnly = normalizedPhone.replace(/\D/g, ""); // e.g. "919876543210"
   const message = buildInvoiceMessage(bill, settings);
   const encodedMsg = encodeURIComponent(message);
-  
-  const waUrl = rawNumber
-    ? `https://wa.me/${rawNumber}?text=${encodedMsg}`
-    : `https://wa.me/?text=${encodedMsg}`;
 
-  window.open(waUrl, "_blank");
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+
+  let waUrl = "";
+  if (digitsOnly && digitsOnly.length >= 10) {
+    waUrl = isMobile
+      ? `https://api.whatsapp.com/send?phone=${digitsOnly}&text=${encodedMsg}`
+      : `https://web.whatsapp.com/send?phone=${digitsOnly}&text=${encodedMsg}`;
+  } else {
+    waUrl = isMobile
+      ? `https://api.whatsapp.com/send?text=${encodedMsg}`
+      : `https://web.whatsapp.com/send?text=${encodedMsg}`;
+  }
+
+  // 1. Try opening new tab
+  const win = window.open(waUrl, "_blank");
+
+  // 2. Popup blocker fallback
+  if (!win || win.closed || typeof win.closed === "undefined") {
+    window.location.href = waUrl;
+  }
 }
