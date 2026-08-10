@@ -1,5 +1,6 @@
 import { Bill } from "@/types/bill";
 import { StoreSettings } from "@/types/store";
+import { generateBillPDF } from "./pdf-export";
 
 /**
  * Cleanly extracts 12-digit Indian mobile number with country code 91.
@@ -54,6 +55,7 @@ export function buildInvoiceMessage(bill: Bill, settings: StoreSettings): string
     `*Summary of Items:*\n${itemsText}\n\n` +
     `*Grand Total:* ₹${bill.calculation.grandTotal}\n` +
     `*Amount Paid:* ₹${bill.calculation.paidAmount}${dueText}\n\n` +
+    `📎 *Tax Invoice PDF document has been generated & downloaded for this bill.*\n\n` +
     `Thank you for shopping with ${settings.storeName}!\n` +
     `Ph: ${settings.phone} | ${settings.address}`
   );
@@ -68,13 +70,15 @@ export function checkWhatsAppConfiguration(): { configured: boolean; mode: "DEMO
 
 /**
  * Sends Invoice via WhatsApp instantly to any target 10-digit mobile number.
- * Opens direct WhatsApp chat without forcing unprompted PDF file downloads.
+ * Generates & downloads the official PDF document, shares PDF file via Web Share API where supported,
+ * and launches WhatsApp chat.
  */
-export function sendInvoiceWhatsApp(
+export async function sendInvoiceWhatsApp(
   bill: Bill,
   settings: StoreSettings,
-  customPhone?: string
-): void {
+  customPhone?: string,
+  elementId: string = "printable-bill-area"
+): Promise<void> {
   if (typeof window === "undefined") return;
 
   const phoneToUse = customPhone || bill.customerPhone || "";
@@ -82,11 +86,35 @@ export function sendInvoiceWhatsApp(
   const message = buildInvoiceMessage(bill, settings);
   const encodedMsg = encodeURIComponent(message);
 
+  // 1. Generate & download official PDF file
+  let pdfResult: { file: File; blob: Blob; fileName: string } | null = null;
+  try {
+    pdfResult = await generateBillPDF(bill, settings, elementId, true);
+  } catch (err) {
+    console.warn("PDF generation error in WhatsApp send:", err);
+  }
+
+  // 2. Mobile Native Web Share API with PDF File Attachment
+  if (typeof navigator !== "undefined" && navigator.canShare && pdfResult?.file) {
+    try {
+      if (navigator.canShare({ files: [pdfResult.file] })) {
+        await navigator.share({
+          title: `Tax Invoice PDF - ${bill.invoiceNo}`,
+          text: message,
+          files: [pdfResult.file],
+        });
+        return;
+      }
+    } catch (err) {
+      console.log("Web share dismissed, falling back to WhatsApp URL");
+    }
+  }
+
+  // 3. Direct WhatsApp Chat Launch
   const waUrl = phoneDigits
     ? `https://wa.me/${phoneDigits}?text=${encodedMsg}`
     : `https://wa.me/?text=${encodedMsg}`;
 
-  // Direct open - fast & instant
   const win = window.open(waUrl, "_blank");
   if (!win || win.closed || typeof win.closed === "undefined") {
     window.location.href = waUrl;
