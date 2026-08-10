@@ -15,6 +15,7 @@ import { RecentBills } from "@/components/dashboard/RecentBills";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { BillTemplateA4 } from "@/components/bills/BillTemplateA4";
+import { BillActionToolbar } from "@/components/bills/BillActionToolbar";
 import { CustomerAccountDrawer } from "@/components/customers/CustomerAccountDrawer";
 import { SupplierAccountDrawer } from "@/components/ledger/SupplierAccountDrawer";
 import { PlusCircle, Sparkles, Eye, Printer, MessageCircle, ArrowRight, Package, Users, AlertTriangle } from "lucide-react";
@@ -337,19 +338,7 @@ export default function DashboardPage() {
           maxWidth="2xl"
         >
           <div className="space-y-4">
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => sendInvoiceWhatsApp(selectedBillModal, settings)}
-                icon={<MessageCircle className="w-4 h-4 text-emerald-400" />}
-              >
-                Send PDF on WhatsApp
-              </Button>
-              <Button variant="gold" size="sm" onClick={() => window.print()} icon={<Printer className="w-4 h-4" />}>
-                Print Invoice
-              </Button>
-            </div>
+            <BillActionToolbar bill={selectedBillModal} settings={settings} />
             <div className="max-h-[70vh] overflow-y-auto rounded-xl border border-slate-200">
               <BillTemplateA4 bill={selectedBillModal} settings={settings} />
             </div>

@@ -18,7 +18,7 @@ import { BillTemplateA4 } from "@/components/bills/BillTemplateA4";
 import { calculateInvoice } from "@/lib/invoice";
 import { Printer, CheckCircle2, MessageCircle, Image as ImageIcon } from "lucide-react";
 import { sendInvoiceWhatsApp } from "@/lib/whatsapp";
-import { downloadInvoiceAsImage } from "@/lib/image-export";
+import { BillActionToolbar } from "@/components/bills/BillActionToolbar";
 import { Bill } from "@/types/bill";
 import { formatCurrency } from "@/lib/currency";
 
@@ -153,27 +153,7 @@ export const BillingForm: React.FC = () => {
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 <span>Invoice saved and stock updated!</span>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => downloadInvoiceAsImage(generatedBill.invoiceNo, generatedBill.customerName)}
-                  icon={<ImageIcon className="w-4 h-4 text-amber-400" />}
-                >
-                  Download Image PNG
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => sendInvoiceWhatsApp(generatedBill, settings)}
-                  icon={<MessageCircle className="w-4 h-4 text-emerald-400" />}
-                >
-                  WhatsApp
-                </Button>
-                <Button variant="gold" size="sm" onClick={handlePrintGeneratedBill} icon={<Printer className="w-4 h-4" />}>
-                  Print / Save PDF
-                </Button>
-              </div>
+              <BillActionToolbar bill={generatedBill} settings={settings} />
             </div>
 
             <div className="max-h-[65vh] overflow-y-auto rounded-xl border border-slate-200">

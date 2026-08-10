@@ -1,6 +1,5 @@
 import { Bill } from "@/types/bill";
 import { StoreSettings } from "@/types/store";
-import { generateBillPDF } from "./pdf-export";
 
 /**
  * Normalizes an Indian mobile number to standard +91 format.
@@ -59,53 +58,20 @@ export function checkWhatsAppConfiguration(): { configured: boolean; mode: "DEMO
 }
 
 /**
- * Sends Invoice via WhatsApp.
- * Direct PDF Document sharing on supported mobile devices via Web Share API.
- * Opens WhatsApp Web directly on Desktop Vercel deployments without popup blocker issues.
+ * Sends Invoice via WhatsApp instantly.
+ * Direct WhatsApp chat launch pre-filled with customer phone number and formatted tax invoice summary.
  */
-export async function sendInvoiceWhatsApp(bill: Bill, settings: StoreSettings): Promise<void> {
+export function sendInvoiceWhatsApp(bill: Bill, settings: StoreSettings): void {
+  if (typeof window === "undefined") return;
+
   const normalizedPhone = normalizeIndianMobile(bill.customerPhone);
   const rawNumber = normalizedPhone.replace("+", "");
   const message = buildInvoiceMessage(bill, settings);
   const encodedMsg = encodeURIComponent(message);
-  const waUrl = `https://wa.me/${rawNumber}?text=${encodedMsg}`;
+  
+  const waUrl = rawNumber
+    ? `https://wa.me/${rawNumber}?text=${encodedMsg}`
+    : `https://wa.me/?text=${encodedMsg}`;
 
-  const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  // On desktop, pre-open window synchronously to prevent Vercel HTTPS popup blockers
-  let desktopWin: Window | null = null;
-  if (!isMobile && typeof window !== "undefined") {
-    desktopWin = window.open("about:blank", "_blank");
-  }
-
-  try {
-    // Generate PDF file in memory
-    const pdfResult = await generateBillPDF(bill, settings, "printable-bill-area", false);
-
-    // If Web Share API is supported (e.g. Mobile Android/iOS), share PDF file directly
-    if (typeof navigator !== "undefined" && navigator.canShare && pdfResult?.file) {
-      if (navigator.canShare({ files: [pdfResult.file] })) {
-        if (desktopWin && !desktopWin.closed) {
-          desktopWin.close();
-        }
-        await navigator.share({
-          title: `Tax Invoice PDF - ${bill.invoiceNo}`,
-          text: message,
-          files: [pdfResult.file],
-        });
-        return;
-      }
-    }
-  } catch (err) {
-    console.warn("PDF generation / share fallback:", err);
-  }
-
-  // Navigate to WhatsApp
-  if (isMobile) {
-    window.location.href = waUrl;
-  } else if (desktopWin && !desktopWin.closed) {
-    desktopWin.location.href = waUrl;
-  } else if (typeof window !== "undefined") {
-    window.open(waUrl, "_blank");
-  }
+  window.open(waUrl, "_blank");
 }

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { PaymentDetailDrawer } from "@/components/payments/PaymentDetailDrawer";
 import { BillTemplateA4 } from "@/components/bills/BillTemplateA4";
+import { BillActionToolbar } from "@/components/bills/BillActionToolbar";
 import { CustomerAccountDrawer } from "@/components/customers/CustomerAccountDrawer";
 import { Bill } from "@/types/bill";
 import { normalizeIndianMobile, sendInvoiceWhatsApp } from "@/lib/whatsapp";
@@ -569,19 +570,7 @@ export default function PaymentsPage() {
           maxWidth="2xl"
         >
           <div className="space-y-4">
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => sendInvoiceWhatsApp(selectedPaymentBill, settings)}
-                icon={<MessageCircle className="w-4 h-4 text-emerald-400" />}
-              >
-                Send PDF on WhatsApp
-              </Button>
-              <Button variant="gold" size="sm" onClick={() => window.print()} icon={<Printer className="w-4 h-4" />}>
-                Print Invoice
-              </Button>
-            </div>
+            <BillActionToolbar bill={selectedPaymentBill} settings={settings} />
 
             <div className="max-h-[70vh] overflow-y-auto rounded-xl border border-slate-200">
               <BillTemplateA4 bill={selectedPaymentBill} settings={settings} />

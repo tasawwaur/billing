@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/Select";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
 import { BillTemplateA4 } from "@/components/bills/BillTemplateA4";
+import { BillActionToolbar } from "@/components/bills/BillActionToolbar";
 import { normalizeIndianMobile, sendInvoiceWhatsApp } from "@/lib/whatsapp";
 import { formatCurrency, formatDate, formatTime } from "@/lib/currency";
 import { Bill } from "@/types/bill";
@@ -512,27 +513,7 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
           maxWidth="2xl"
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => downloadInvoiceAsImage(selectedBillForPreview.invoiceNo, selectedBillForPreview.customerName)}
-                icon={<ImageIcon className="w-4 h-4 text-amber-400" />}
-              >
-                Download Image PNG
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => sendInvoiceWhatsApp(selectedBillForPreview, settings)}
-                icon={<MessageCircle className="w-4 h-4 text-emerald-400" />}
-              >
-                WhatsApp
-              </Button>
-              <Button variant="gold" size="sm" onClick={() => window.print()} icon={<Printer className="w-4 h-4" />}>
-                Print Invoice
-              </Button>
-            </div>
+            <BillActionToolbar bill={selectedBillForPreview} settings={settings} />
             <div className="max-h-[65vh] overflow-y-auto rounded-xl border border-slate-200">
               <BillTemplateA4 bill={selectedBillForPreview} settings={settings} />
             </div>

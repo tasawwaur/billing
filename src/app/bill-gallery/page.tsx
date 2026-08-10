@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { BillTemplateA4 } from "@/components/bills/BillTemplateA4";
+import { BillActionToolbar } from "@/components/bills/BillActionToolbar";
 import { CustomerAccountDrawer } from "@/components/customers/CustomerAccountDrawer";
 import { sendInvoiceWhatsApp } from "@/lib/whatsapp";
 import { downloadInvoiceAsImage } from "@/lib/image-export";
@@ -379,35 +380,7 @@ export default function BillGalleryPage() {
           maxWidth="2xl"
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-2 justify-end">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => downloadInvoiceAsImage(selectedBill.invoiceNo, selectedBill.customerName)}
-                icon={<ImageIcon className="w-4 h-4 text-amber-400" />}
-              >
-                Download Image PNG
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleShare(selectedBill)}
-                icon={<Share2 className="w-4 h-4" />}
-              >
-                Share
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => sendInvoiceWhatsApp(selectedBill, settings)}
-                icon={<MessageCircle className="w-4 h-4 text-emerald-400" />}
-              >
-                WhatsApp
-              </Button>
-              <Button variant="gold" size="sm" onClick={() => window.print()} icon={<Printer className="w-4 h-4" />}>
-                Print / Save PDF
-              </Button>
-            </div>
+            <BillActionToolbar bill={selectedBill} settings={settings} />
 
             <div className="max-h-[65vh] overflow-y-auto rounded-xl border border-slate-200">
               <BillTemplateA4 bill={selectedBill} settings={settings} />
