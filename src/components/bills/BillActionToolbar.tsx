@@ -29,17 +29,22 @@ export const BillActionToolbar: React.FC<BillActionToolbarProps> = ({
 
   // WhatsApp Custom Number Modal state
   const [isWaModalOpen, setIsWaModalOpen] = useState(false);
-  const [targetPhone, setTargetPhone] = useState(bill.customerPhone || "");
+
+  // Clean initial phone (extract 10 digits if available)
+  const initial10Digits = bill.customerPhone
+    ? getCleanIndianMobileDigits(bill.customerPhone).replace(/^91/, "")
+    : "";
+  const [targetPhone, setTargetPhone] = useState(initial10Digits);
 
   const handleOpenWaModal = () => {
-    setTargetPhone(bill.customerPhone || "");
+    setTargetPhone(initial10Digits);
     setIsWaModalOpen(true);
   };
 
-  const handleSendWa = async (e: React.FormEvent) => {
+  const handleSendWa = (e: React.FormEvent) => {
     e.preventDefault();
     setIsWaModalOpen(false);
-    await sendInvoiceWhatsApp(bill, settings, targetPhone, elementId);
+    sendInvoiceWhatsApp(bill, settings, targetPhone);
   };
 
   const handleDownloadPdf = async () => {
@@ -178,7 +183,7 @@ export const BillActionToolbar: React.FC<BillActionToolbarProps> = ({
         <Modal
           isOpen={isWaModalOpen}
           onClose={() => setIsWaModalOpen(false)}
-          title="Send Invoice via WhatsApp"
+          title="Send Invoice on WhatsApp"
           maxWidth="md"
         >
           <form onSubmit={handleSendWa} className="space-y-4">
@@ -187,7 +192,7 @@ export const BillActionToolbar: React.FC<BillActionToolbarProps> = ({
                 Invoice #{bill.invoiceNo} — ₹{bill.calculation.grandTotal.toLocaleString("en-IN")}
               </p>
               <p className="text-[11px] text-slate-400">
-                Type ANY 10-digit Indian WhatsApp mobile number below. No need to type +91 or 0!
+                Direct WhatsApp chat will open instantly for this mobile number!
               </p>
             </div>
 
