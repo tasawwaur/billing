@@ -12,11 +12,26 @@ interface CustomerStore {
   recordDenaPayment: (customerId: string, paidAmount: number) => void;
   recordAddDena: (customerId: string, amount: number) => void;
   recordAddDue: (customerId: string, amount: number) => void;
+  importBackupCustomers: (newCustomers: Customer[]) => void;
+  clearCustomers: () => void;
   resetCustomers: () => void;
 }
 
+const getInitialCustomers = (): Customer[] => {
+  const stored = getStorageItem<Customer[]>("rajdhani_customers", INITIAL_CUSTOMERS);
+  if (Array.isArray(stored)) {
+    // Keep only real user-added customers, strip out all 126 demo customers
+    const cleaned = stored.filter((c) => !c.id.match(/^cust-\d{1,3}$/));
+    if (cleaned.length !== stored.length) {
+      setStorageItem("rajdhani_customers", cleaned);
+    }
+    return cleaned;
+  }
+  return [];
+};
+
 export const useCustomerStore = create<CustomerStore>((set, get) => ({
-  customers: getStorageItem<Customer[]>("luxury_customers", INITIAL_CUSTOMERS),
+  customers: getInitialCustomers(),
   addCustomer: (c) => {
     const newCustomer: Customer = {
       ...c,
@@ -28,7 +43,7 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
       createdAt: new Date().toISOString().split("T")[0],
     };
     const updated = [newCustomer, ...get().customers];
-    setStorageItem("luxury_customers", updated);
+    setStorageItem("rajdhani_customers", updated);
     set({ customers: updated });
     return newCustomer;
   },
@@ -37,7 +52,7 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
       const updated = state.customers.map((c) =>
         c.id === id ? { ...c, ...updatedFields } : c
       );
-      setStorageItem("luxury_customers", updated);
+      setStorageItem("rajdhani_customers", updated);
       return { customers: updated };
     }),
   recordPurchase: (customerId, spentAmount, dueAmount) =>
@@ -53,7 +68,7 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
         }
         return c;
       });
-      setStorageItem("luxury_customers", updated);
+      setStorageItem("rajdhani_customers", updated);
       return { customers: updated };
     }),
   recordPayment: (customerId, paidAmount) =>
@@ -67,7 +82,7 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
         }
         return c;
       });
-      setStorageItem("luxury_customers", updated);
+      setStorageItem("rajdhani_customers", updated);
       return { customers: updated };
     }),
   recordDenaPayment: (customerId, paidAmount) =>
@@ -81,7 +96,7 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
         }
         return c;
       });
-      setStorageItem("luxury_customers", updated);
+      setStorageItem("rajdhani_customers", updated);
       return { customers: updated };
     }),
   recordAddDena: (customerId, amount) =>
@@ -95,7 +110,7 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
         }
         return c;
       });
-      setStorageItem("luxury_customers", updated);
+      setStorageItem("rajdhani_customers", updated);
       return { customers: updated };
     }),
   recordAddDue: (customerId, amount) =>
@@ -109,11 +124,19 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
         }
         return c;
       });
-      setStorageItem("luxury_customers", updated);
+      setStorageItem("rajdhani_customers", updated);
       return { customers: updated };
     }),
+  importBackupCustomers: (newCustomers) => {
+    setStorageItem("rajdhani_customers", newCustomers);
+    set({ customers: newCustomers });
+  },
+  clearCustomers: () => {
+    setStorageItem("rajdhani_customers", []);
+    set({ customers: [] });
+  },
   resetCustomers: () => {
-    setStorageItem("luxury_customers", INITIAL_CUSTOMERS);
-    set({ customers: INITIAL_CUSTOMERS });
+    setStorageItem("rajdhani_customers", []);
+    set({ customers: [] });
   },
 }));

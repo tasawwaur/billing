@@ -3,6 +3,7 @@ import { BillTemplateId } from "./bill";
 export interface StoreSettings {
   storeName: string;
   tagline: string;
+  ownerName?: string;
   gstin: string;
   phone: string;
   email: string;

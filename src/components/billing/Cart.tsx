@@ -8,6 +8,8 @@ import { ShoppingBag, Trash2 } from "lucide-react";
 interface CartProps {
   items: BillItem[];
   onUpdateQty: (productId: string, quantity: number) => void;
+  onUpdatePrice?: (productId: string, price: number) => void;
+  onUpdateTaxRate?: (productId: string, taxRate: number) => void;
   onRemove: (productId: string) => void;
   onClearCart: () => void;
 }
@@ -15,6 +17,8 @@ interface CartProps {
 export const Cart: React.FC<CartProps> = ({
   items,
   onUpdateQty,
+  onUpdatePrice,
+  onUpdateTaxRate,
   onRemove,
   onClearCart,
 }) => {
@@ -26,7 +30,7 @@ export const Cart: React.FC<CartProps> = ({
         </div>
         <p className="text-sm font-bold text-slate-200">POS Cart is Empty</p>
         <p className="text-xs text-slate-400 mt-1 max-w-xs">
-          Select luxury items from catalog to generate tax invoice
+          Select items from catalog or fast search to create bill
         </p>
       </div>
     );
@@ -51,6 +55,8 @@ export const Cart: React.FC<CartProps> = ({
             key={item.productId}
             item={item}
             onUpdateQty={onUpdateQty}
+            onUpdatePrice={onUpdatePrice}
+            onUpdateTaxRate={onUpdateTaxRate}
             onRemove={onRemove}
           />
         ))}

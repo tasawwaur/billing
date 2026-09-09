@@ -83,16 +83,7 @@ export const BillTemplateThermal80: React.FC<BillTemplateProps> = ({ bill, setti
         )}
       </div>
 
-      {/* QR & Footer */}
-      {settings.showQrOnBill && (
-        <div className="text-center my-2 py-2 border-t border-b border-dashed border-slate-900">
-          <div className="w-16 h-16 mx-auto bg-slate-900 text-white text-[8px] flex items-center justify-center p-1 rounded">
-            UPI QR CODE
-          </div>
-          <p className="text-[9px] mt-1 font-bold">SCAN & PAY VIA UPI</p>
-          <p className="text-[8px]">{settings.upiId}</p>
-        </div>
-      )}
+
 
       <div className="text-center pt-1 text-[9px]">
         <p className="font-bold">THANK YOU FOR YOUR VISIT!</p>

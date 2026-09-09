@@ -10,12 +10,24 @@ interface BillTemplateProps {
 
 export const BillTemplateModern: React.FC<BillTemplateProps> = ({ bill, settings }) => {
   return (
-    <div id="printable-bill-area" className="w-full max-w-[800px] mx-auto bg-white text-slate-900 p-8 font-sans shadow-xl rounded-lg">
+    <div id="printable-bill-area" className="w-[800px] min-w-[800px] mx-auto bg-white text-slate-900 p-8 font-sans shadow-xl rounded-lg">
       <div className="flex justify-between items-start pb-6 border-b border-slate-200">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{settings.storeName}</h1>
-          <p className="text-xs text-slate-500">{settings.address}</p>
-          <p className="text-xs text-slate-500">Ph: {settings.phone} | GSTIN: {settings.gstin}</p>
+        <div className="flex items-start gap-3">
+          {settings.logoUrl && (
+            <img
+              src={settings.logoUrl}
+              alt={settings.storeName}
+              className="w-14 h-14 rounded-lg object-cover border border-slate-200 shadow-sm shrink-0"
+            />
+          )}
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{settings.storeName}</h1>
+            <p className="text-xs text-slate-500">{settings.address}</p>
+            <p className="text-xs text-slate-500">Ph: {settings.phone} | GSTIN: {settings.gstin}</p>
+            {settings.ownerName && (
+              <p className="text-xs font-semibold text-slate-700 mt-0.5">Proprietor: {settings.ownerName}</p>
+            )}
+          </div>
         </div>
         <div className="text-right">
           <span className="text-xs font-bold uppercase tracking-widest text-slate-400">INVOICE</span>
@@ -65,7 +77,7 @@ export const BillTemplateModern: React.FC<BillTemplateProps> = ({ bill, settings
           </div>
           {settings.showGstOnBill && (
             <div className="flex justify-between">
-              <span className="text-slate-500">Tax (GST 18%):</span>
+              <span className="text-slate-500">GST Total:</span>
               <span>{formatCurrency(bill.calculation.totalTax)}</span>
             </div>
           )}
@@ -73,6 +85,16 @@ export const BillTemplateModern: React.FC<BillTemplateProps> = ({ bill, settings
             <span>Total:</span>
             <span>{formatCurrency(bill.calculation.grandTotal)}</span>
           </div>
+          <div className="flex justify-between text-slate-700 font-semibold pt-1">
+            <span>Paid Amount:</span>
+            <span className="font-bold text-emerald-600">{formatCurrency(bill.calculation.paidAmount)}</span>
+          </div>
+          {bill.calculation.dueAmount > 0 && (
+            <div className="flex justify-between text-rose-700 font-bold bg-rose-50 px-2 py-1 rounded border border-rose-200">
+              <span>Shesh Baaki (Due):</span>
+              <span className="font-extrabold">{formatCurrency(bill.calculation.dueAmount)}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ interface BillTemplateProps {
 
 export const BillTemplateLuxuryBlack: React.FC<BillTemplateProps> = ({ bill, settings }) => {
   return (
-    <div id="printable-bill-area" className="w-full max-w-[800px] mx-auto bg-[#0b0f17] text-slate-100 p-8 shadow-2xl font-sans rounded-xl border border-gold-500/30">
+    <div id="printable-bill-area" className="w-[800px] min-w-[800px] mx-auto bg-[#0b0f17] text-slate-100 p-8 shadow-2xl font-sans rounded-xl border border-gold-500/30">
       <div className="flex justify-between items-start border-b border-gold-500/40 pb-6 mb-6">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gold-400 uppercase font-serif">

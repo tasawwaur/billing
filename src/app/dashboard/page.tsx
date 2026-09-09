@@ -44,14 +44,14 @@ export default function DashboardPage() {
 
   const todayStr = new Date().toISOString().split("T")[0];
   const todayBills = useMemo(() => {
-    return bills.filter((b) => b.date.startsWith(todayStr) || b.date.startsWith("2026-08-09"));
+    return bills.filter((b) => b.date.startsWith(todayStr));
   }, [bills, todayStr]);
   
   const todaySalesSum = useMemo(() => {
-    return todayBills.reduce((sum, b) => sum + b.calculation.grandTotal, 0) || 54870;
+    return todayBills.reduce((sum, b) => sum + b.calculation.grandTotal, 0);
   }, [todayBills]);
 
-  const todayBillsCount = todayBills.length || 1;
+  const todayBillsCount = todayBills.length;
 
   const lowStockProducts = useMemo(() => {
     return products.filter((p) => p.stock <= p.minStockAlert);

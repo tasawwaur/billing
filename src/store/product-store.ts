@@ -9,11 +9,33 @@ interface ProductStore {
   updateProduct: (id: string, updated: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   reduceStock: (items: { productId: string; quantity: number }[]) => void;
+  importBackupProducts: (newProducts: Product[]) => void;
   resetProducts: () => void;
 }
 
+const getInitialProducts = (): Product[] => {
+  const stored = getStorageItem<Product[]>("rajdhani_products", INITIAL_PRODUCTS);
+  if (Array.isArray(stored) && stored.length > 0) {
+    let hasDiff = false;
+    const migrated = stored.map((p) => {
+      const canonical = INITIAL_PRODUCTS.find((init) => init.id === p.id);
+      if (canonical && canonical.name !== p.name) {
+        hasDiff = true;
+        return { ...p, name: canonical.name };
+      }
+      return p;
+    });
+    if (hasDiff) {
+      setStorageItem("rajdhani_products", migrated);
+      return migrated;
+    }
+    return stored;
+  }
+  return INITIAL_PRODUCTS;
+};
+
 export const useProductStore = create<ProductStore>((set) => ({
-  products: getStorageItem<Product[]>("luxury_products", INITIAL_PRODUCTS),
+  products: getInitialProducts(),
   addProduct: (prod) =>
     set((state) => {
       const newProduct: Product = {
@@ -22,7 +44,7 @@ export const useProductStore = create<ProductStore>((set) => ({
         createdAt: new Date().toISOString().split("T")[0],
       };
       const updated = [newProduct, ...state.products];
-      setStorageItem("luxury_products", updated);
+      setStorageItem("rajdhani_products", updated);
       return { products: updated };
     }),
   updateProduct: (id, updatedFields) =>
@@ -30,13 +52,13 @@ export const useProductStore = create<ProductStore>((set) => ({
       const updated = state.products.map((p) =>
         p.id === id ? { ...p, ...updatedFields } : p
       );
-      setStorageItem("luxury_products", updated);
+      setStorageItem("rajdhani_products", updated);
       return { products: updated };
     }),
   deleteProduct: (id) =>
     set((state) => {
       const updated = state.products.filter((p) => p.id !== id);
-      setStorageItem("luxury_products", updated);
+      setStorageItem("rajdhani_products", updated);
       return { products: updated };
     }),
   reduceStock: (items) =>
@@ -48,11 +70,15 @@ export const useProductStore = create<ProductStore>((set) => ({
         }
         return p;
       });
-      setStorageItem("luxury_products", updated);
+      setStorageItem("rajdhani_products", updated);
       return { products: updated };
     }),
+  importBackupProducts: (newProducts) => {
+    setStorageItem("rajdhani_products", newProducts);
+    set({ products: newProducts });
+  },
   resetProducts: () => {
-    setStorageItem("luxury_products", INITIAL_PRODUCTS);
+    setStorageItem("rajdhani_products", INITIAL_PRODUCTS);
     set({ products: INITIAL_PRODUCTS });
   },
 }));

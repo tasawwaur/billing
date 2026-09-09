@@ -10,7 +10,7 @@ interface BillTemplateProps {
 
 export const BillTemplateLuxury: React.FC<BillTemplateProps> = ({ bill, settings }) => {
   return (
-    <div id="printable-bill-area" className="w-full max-w-[800px] mx-auto bg-white text-slate-900 p-8 shadow-2xl font-sans rounded-xl border border-gold-500/30">
+    <div id="printable-bill-area" className="w-[800px] min-w-[800px] mx-auto bg-white text-slate-900 p-8 shadow-2xl font-sans rounded-xl border border-gold-500/30">
       {/* Header */}
       <div className="flex justify-between items-start border-b-2 border-[#d4af37] pb-6 mb-6">
         <div>
@@ -86,18 +86,7 @@ export const BillTemplateLuxury: React.FC<BillTemplateProps> = ({ bill, settings
       {/* Summary & QR */}
       <div className="flex justify-between items-start pt-4 border-t border-slate-200 mb-6">
         <div className="w-1/2 pr-6">
-          {settings.showQrOnBill && (
-            <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <div className="w-16 h-16 bg-slate-900 text-white flex items-center justify-center font-mono text-[9px] rounded text-center p-1 leading-tight">
-                UPI QR<br/>CODE
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-800">Scan to Pay via UPI</p>
-                <p className="text-[10px] font-mono text-slate-500">{settings.upiId}</p>
-                <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Verified Merchant</p>
-              </div>
-            </div>
-          )}
+
           {settings.showTermsOnBill && (
             <div className="mt-4">
               <p className="text-[10px] font-bold text-slate-700 uppercase">Terms & Conditions:</p>

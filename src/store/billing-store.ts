@@ -15,12 +15,15 @@ interface BillingStore {
   selectedCustomerPhone: string;
   orderDiscountPercent: number;
   paymentMethod: PaymentMethod;
-  paidAmountInput: number;
+  paidAmountInput: number | null;
   
   // Cart Actions
   addToCart: (product: Product, quantity?: number) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
+  updateCartItemPrice: (productId: string, price: number) => void;
   updateCartItemDiscount: (productId: string, discount: number, discountType: 'percentage' | 'fixed') => void;
+  updateCartItemTaxRate: (productId: string, taxRate: number) => void;
+  applyGlobalGstRate: (taxRate: number) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   
@@ -28,24 +31,39 @@ interface BillingStore {
   setCustomer: (id: string, name: string, phone: string) => void;
   setOrderDiscount: (percent: number) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
-  setPaidAmountInput: (amount: number) => void;
+  setPaidAmountInput: (amount: number | null) => void;
   
   // Create & Manage Invoice
   saveCurrentBill: (templateId?: BillTemplateId) => Bill | null;
   cancelBill: (billId: string) => Bill | null;
+  recordBillPayment: (invoiceNo: string, amount: number) => void;
   importBackupBills: (newBills: Bill[]) => void;
+  clearBills: () => void;
   resetBills: () => void;
 }
 
+const getInitialBills = (): Bill[] => {
+  const stored = getStorageItem<Bill[]>("rajdhani_bills", INITIAL_BILLS);
+  if (Array.isArray(stored)) {
+    // Filter out all 310 demo bills (bill-1 to bill-310)
+    const cleaned = stored.filter((b) => !b.id.match(/^bill-\d{1,3}$/));
+    if (cleaned.length !== stored.length) {
+      setStorageItem("rajdhani_bills", cleaned);
+    }
+    return cleaned;
+  }
+  return [];
+};
+
 export const useBillingStore = create<BillingStore>((set, get) => ({
-  bills: getStorageItem<Bill[]>("luxury_bills", INITIAL_BILLS),
+  bills: getInitialBills(),
   cart: [],
-  selectedCustomerId: "cust-1",
-  selectedCustomerName: "Rahul Sharma",
-  selectedCustomerPhone: "+919876543210",
+  selectedCustomerId: "",
+  selectedCustomerName: "",
+  selectedCustomerPhone: "",
   orderDiscountPercent: 0,
   paymentMethod: "UPI",
-  paidAmountInput: 0,
+  paidAmountInput: null,
 
   addToCart: (product, quantity = 1) =>
     set((state) => {
@@ -84,12 +102,33 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
 
   updateCartQuantity: (productId, quantity) =>
     set((state) => {
-      if (quantity <= 0) {
-        return { cart: state.cart.filter((item) => item.productId !== productId) };
-      }
+      const safeQty = Math.max(0, quantity);
       const updatedCart = state.cart.map((item) => {
         if (item.productId === productId) {
-          const itemSubtotal = item.price * quantity;
+          const itemSubtotal = item.price * safeQty;
+          let discAmount = 0;
+          if (item.discount > 0) {
+            discAmount = item.discountType === "percentage" ? (itemSubtotal * item.discount) / 100 : item.discount;
+          }
+          const afterDisc = Math.max(0, itemSubtotal - discAmount);
+          const taxAmount = (afterDisc * item.taxRate) / 100;
+          return {
+            ...item,
+            quantity: safeQty,
+            taxAmount,
+            total: afterDisc + taxAmount,
+          };
+        }
+        return item;
+      });
+      return { cart: updatedCart };
+    }),
+
+  updateCartItemPrice: (productId, price) =>
+    set((state) => {
+      const updatedCart = state.cart.map((item) => {
+        if (item.productId === productId) {
+          const itemSubtotal = price * item.quantity;
           let discAmount = 0;
           if (item.discount > 0) {
             discAmount = item.discountType === "percentage" ? (itemSubtotal * item.discount) / 100 : item.discount;
@@ -98,7 +137,7 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
           const taxAmount = (afterDisc * item.taxRate) / 100;
           return {
             ...item,
-            quantity,
+            price,
             taxAmount,
             total: afterDisc + taxAmount,
           };
@@ -132,10 +171,55 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
       return { cart: updatedCart };
     }),
 
+  updateCartItemTaxRate: (productId, taxRate) =>
+    set((state) => {
+      const safeRate = Math.max(0, taxRate);
+      const updatedCart = state.cart.map((item) => {
+        if (item.productId === productId) {
+          const itemSubtotal = item.price * item.quantity;
+          let discAmount = 0;
+          if (item.discount > 0) {
+            discAmount = item.discountType === "percentage" ? (itemSubtotal * item.discount) / 100 : item.discount;
+          }
+          const afterDisc = Math.max(0, itemSubtotal - discAmount);
+          const taxAmount = (afterDisc * safeRate) / 100;
+          return {
+            ...item,
+            taxRate: safeRate,
+            taxAmount,
+            total: afterDisc + taxAmount,
+          };
+        }
+        return item;
+      });
+      return { cart: updatedCart };
+    }),
+
+  applyGlobalGstRate: (taxRate) =>
+    set((state) => {
+      const safeRate = Math.max(0, taxRate);
+      const updatedCart = state.cart.map((item) => {
+        const itemSubtotal = item.price * item.quantity;
+        let discAmount = 0;
+        if (item.discount > 0) {
+          discAmount = item.discountType === "percentage" ? (itemSubtotal * item.discount) / 100 : item.discount;
+        }
+        const afterDisc = Math.max(0, itemSubtotal - discAmount);
+        const taxAmount = (afterDisc * safeRate) / 100;
+        return {
+          ...item,
+          taxRate: safeRate,
+          taxAmount,
+          total: afterDisc + taxAmount,
+        };
+      });
+      return { cart: updatedCart };
+    }),
+
   removeFromCart: (productId) =>
     set((state) => ({ cart: state.cart.filter((item) => item.productId !== productId) })),
 
-  clearCart: () => set({ cart: [], orderDiscountPercent: 0, paidAmountInput: 0 }),
+  clearCart: () => set({ cart: [], orderDiscountPercent: 0, paidAmountInput: null }),
 
   setCustomer: (id, name, phone) =>
     set({ selectedCustomerId: id, selectedCustomerName: name, selectedCustomerPhone: phone }),
@@ -148,7 +232,14 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
     const { cart, selectedCustomerId, selectedCustomerName, selectedCustomerPhone, orderDiscountPercent, paymentMethod, paidAmountInput, bills } = get();
     if (cart.length === 0) return null;
 
-    const calculation = calculateInvoice(cart, orderDiscountPercent, paymentMethod === "CREDIT" ? 0 : paidAmountInput || undefined);
+    const effectivePaid =
+      paidAmountInput !== null && paidAmountInput !== undefined
+        ? paidAmountInput
+        : paymentMethod === "CREDIT"
+        ? 0
+        : undefined;
+
+    const calculation = calculateInvoice(cart, orderDiscountPercent, effectivePaid);
     
     let status: "PAID" | "DUE" | "PARTIAL" = "PAID";
     if (paymentMethod === "CREDIT" || calculation.paidAmount === 0) {
@@ -164,9 +255,9 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
     const newBill: Bill = {
       id: `bill-${Date.now()}`,
       invoiceNo: invNoStr,
-      customerId: selectedCustomerId,
-      customerName: selectedCustomerName,
-      customerPhone: selectedCustomerPhone,
+      customerId: selectedCustomerId || "walkin",
+      customerName: (selectedCustomerName && selectedCustomerName.trim()) ? selectedCustomerName.trim() : "Walk-in Customer",
+      customerPhone: (selectedCustomerPhone && selectedCustomerPhone.trim()) ? selectedCustomerPhone.trim() : "",
       date: nowStr,
       items: [...cart],
       calculation,
@@ -177,8 +268,16 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
     };
 
     const updatedBills = [newBill, ...bills];
-    setStorageItem("luxury_bills", updatedBills);
-    set({ bills: updatedBills, cart: [], orderDiscountPercent: 0, paidAmountInput: 0 });
+    setStorageItem("rajdhani_bills", updatedBills);
+    set({
+      bills: updatedBills,
+      cart: [],
+      orderDiscountPercent: 0,
+      paidAmountInput: null,
+      selectedCustomerId: "",
+      selectedCustomerName: "",
+      selectedCustomerPhone: "",
+    });
     return newBill;
   },
 
@@ -191,18 +290,49 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
       b.id === targetBill.id ? { ...b, paymentStatus: "CANCELLED" as const } : b
     );
 
-    setStorageItem("luxury_bills", updatedBills);
+    setStorageItem("rajdhani_bills", updatedBills);
     set({ bills: updatedBills });
     return targetBill;
   },
 
+  recordBillPayment: (invoiceNo, amount) => {
+    const { bills } = get();
+    const updatedBills = bills.map((b) => {
+      if (b.invoiceNo === invoiceNo) {
+        const currentPaid = b.calculation?.paidAmount || 0;
+        const grandTotal = b.calculation?.grandTotal || 0;
+        const newPaid = currentPaid + amount;
+        const newDue = Math.max(0, grandTotal - newPaid);
+        const newStatus: "PAID" | "PARTIAL" | "DUE" = newDue <= 0 ? "PAID" : "PARTIAL";
+        return {
+          ...b,
+          paymentStatus: newStatus,
+          calculation: {
+            ...b.calculation,
+            paidAmount: newPaid,
+            dueAmount: newDue,
+          },
+        };
+      }
+      return b;
+    });
+
+    setStorageItem("rajdhani_bills", updatedBills);
+    set({ bills: updatedBills });
+  },
+
   importBackupBills: (newBills) => {
-    setStorageItem("luxury_bills", newBills);
+    setStorageItem("rajdhani_bills", newBills);
     set({ bills: newBills });
   },
 
+  clearBills: () => {
+    setStorageItem("rajdhani_bills", []);
+    set({ bills: [], cart: [], orderDiscountPercent: 0, paidAmountInput: null });
+  },
+
   resetBills: () => {
-    setStorageItem("luxury_bills", INITIAL_BILLS);
-    set({ bills: INITIAL_BILLS, cart: [], orderDiscountPercent: 0, paidAmountInput: 0 });
+    setStorageItem("rajdhani_bills", []);
+    set({ bills: [], cart: [], orderDiscountPercent: 0, paidAmountInput: null });
   },
 }));

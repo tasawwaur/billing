@@ -51,7 +51,7 @@ export function BillDetailClient() {
         }
       />
 
-      <div className="p-4 bg-obsidian-950/80 rounded-2xl border border-gold-500/20 max-w-4xl mx-auto shadow-2xl">
+      <div className="p-4 bg-obsidian-950/80 rounded-2xl border border-gold-500/20 max-w-4xl mx-auto shadow-2xl overflow-x-auto">
         <BillTemplateA4 bill={bill} settings={settings} />
       </div>
     </div>

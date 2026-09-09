@@ -492,7 +492,7 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
               Cancel
             </Button>
             <Button
-              variant={payType === "RECEIVE_LENA" ? "gold" : "primary"}
+              variant={payType === "RECEIVE_LENA" ? "gold" : "secondary"}
               type="submit"
               className="flex-1 font-bold"
             >
@@ -514,7 +514,7 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
         >
           <div className="space-y-4">
             <BillActionToolbar bill={selectedBillForPreview} settings={settings} />
-            <div className="max-h-[65vh] overflow-y-auto rounded-xl border border-slate-200">
+            <div className="max-h-[65vh] overflow-y-auto overflow-x-auto rounded-xl border border-slate-200">
               <BillTemplateA4 bill={selectedBillForPreview} settings={settings} />
             </div>
           </div>

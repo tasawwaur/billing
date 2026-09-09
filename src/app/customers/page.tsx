@@ -711,7 +711,7 @@ export default function CustomersPage() {
                 Cancel
               </Button>
               <Button
-                variant={settleMode === "RECEIVE_LENA" ? "gold" : "primary"}
+                variant={settleMode === "RECEIVE_LENA" ? "gold" : "secondary"}
                 type="submit"
                 className="flex-1 font-bold"
               >

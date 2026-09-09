@@ -37,8 +37,8 @@ import {
 } from "lucide-react";
 
 export default function PaymentsPage() {
-  const { payments, addPaymentRecord, addLedgerEntry } = useLedgerStore();
-  const { bills } = useBillingStore();
+  const { payments, addPaymentRecord, addLedgerEntry, clearPayments } = useLedgerStore();
+  const { bills, recordBillPayment } = useBillingStore();
   const { customers, recordPayment } = useCustomerStore();
   const { settings } = useSettingsStore();
 
@@ -68,6 +68,55 @@ export default function PaymentsPage() {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).getTime();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).getTime();
 
+  // Outstanding Dues Customers
+  const dueCustomers = useMemo(() => {
+    return customers.filter((c) => (c.dueBalance || 0) > 0);
+  }, [customers]);
+
+  const totalOutstandingDue = useMemo(() => {
+    return customers.reduce((sum, c) => sum + (c.dueBalance || 0), 0);
+  }, [customers]);
+
+  // Combine recorded payments with any unpaid bill dues that aren't yet in payments
+  const allPaymentRecords = useMemo(() => {
+    const list: PaymentRecord[] = [...payments];
+
+    // For any bill with dueAmount > 0 that doesn't already have a completed payment record covering it
+    bills.forEach((b) => {
+      if (b.calculation && b.calculation.dueAmount > 0 && b.paymentStatus !== "CANCELLED") {
+        const collectedForBill = payments
+          .filter((p) => p.invoiceNo === b.invoiceNo && p.status === "COMPLETED")
+          .reduce((sum, p) => sum + p.amount, 0);
+
+        const netDue = Math.max(0, b.calculation.dueAmount - collectedForBill);
+
+        const hasExistingPending = list.some(
+          (p) => p.invoiceNo === b.invoiceNo && p.status === "PENDING"
+        );
+
+        if (netDue > 0 && !hasExistingPending) {
+          list.push({
+            id: `due-bill-${b.id}`,
+            billId: b.id,
+            invoiceNo: b.invoiceNo,
+            customerId: b.customerId,
+            customerName: b.customerName,
+            customerPhone: b.customerPhone,
+            amount: netDue,
+            method: (b.paymentMethod === "CREDIT" ? "CASH" : b.paymentMethod) as any,
+            referenceNo: `DUE-${b.invoiceNo}`,
+            date: b.date || b.createdAt,
+            status: "PENDING",
+            notes: `Pending Due (उधारी) - ${b.invoiceNo}`,
+            createdAt: b.createdAt,
+          });
+        }
+      }
+    });
+
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [payments, bills]);
+
   // 1. Dynamic KPI Summary Cards
   const kpis = useMemo(() => {
     let todayReceived = 0;
@@ -83,12 +132,20 @@ export default function PaymentsPage() {
 
       const isToday = p.date.startsWith(todayStr);
       if (isToday) {
-        todayReceived += p.amount;
-        if (p.method === "CASH") cashToday += p.amount;
-        if (p.method === "UPI") upiToday += p.amount;
-        if (p.method === "CARD") cardToday += p.amount;
-        if (p.method === "BANK_TRANSFER") bankToday += p.amount;
-        if (p.invoiceNo === "DIRECT-REC" || p.referenceNo?.includes("REC-")) dueCollectionToday += p.amount;
+        if (p.status === "COMPLETED") {
+          todayReceived += p.amount;
+          if (p.method === "CASH") cashToday += p.amount;
+          if (p.method === "UPI") upiToday += p.amount;
+          if (p.method === "CARD") cardToday += p.amount;
+          if (p.method === "BANK_TRANSFER") bankToday += p.amount;
+        }
+        if (
+          p.invoiceNo === "DIRECT-REC" ||
+          p.referenceNo?.includes("REC-") ||
+          p.notes?.toLowerCase().includes("due")
+        ) {
+          dueCollectionToday += p.amount;
+        }
       }
     }
 
@@ -99,15 +156,15 @@ export default function PaymentsPage() {
       cardToday,
       bankToday,
       dueCollectionToday,
-      totalCount: payments.length,
+      totalCount: allPaymentRecords.length,
     };
-  }, [payments, todayStr]);
+  }, [payments, allPaymentRecords.length, todayStr]);
 
   // 2. Filtered Payments Stream
   const filteredPayments = useMemo(() => {
     const query = deferredSearch.trim().toLowerCase();
 
-    return payments.filter((p) => {
+    return allPaymentRecords.filter((p) => {
       const matchesSearch =
         !query ||
         p.customerName.toLowerCase().includes(query) ||
@@ -122,7 +179,15 @@ export default function PaymentsPage() {
       if (methodFilter === "upi" && p.method !== "UPI") return false;
       if (methodFilter === "card" && p.method !== "CARD") return false;
       if (methodFilter === "bank" && p.method !== "BANK_TRANSFER") return false;
-      if (methodFilter === "due_collection" && (!p.referenceNo?.includes("REC-") && p.invoiceNo !== "DIRECT-REC")) return false;
+      if (methodFilter === "due_collection") {
+        const isDue =
+          p.referenceNo?.includes("REC-") ||
+          p.referenceNo?.includes("DUE-") ||
+          p.invoiceNo === "DIRECT-REC" ||
+          p.status === "PENDING" ||
+          p.notes?.toLowerCase().includes("due");
+        if (!isDue) return false;
+      }
 
       if (statusFilter === "completed" && p.status !== "COMPLETED") return false;
       if (statusFilter === "pending" && p.status !== "PENDING") return false;
@@ -136,20 +201,49 @@ export default function PaymentsPage() {
 
       return true;
     });
-  }, [payments, deferredSearch, methodFilter, periodFilter, statusFilter, todayStr, yesterdayStr, sevenDaysAgo, thirtyDaysAgo]);
+  }, [allPaymentRecords, deferredSearch, methodFilter, periodFilter, statusFilter, todayStr, yesterdayStr, sevenDaysAgo, thirtyDaysAgo]);
 
-  // Outstanding Dues Customers
-  const dueCustomers = useMemo(() => {
-    return customers.filter((c) => c.dueBalance > 0);
-  }, [customers]);
+  const handleOpenAddModal = (cust?: Customer, bill?: Bill) => {
+    let targetCust: Customer | undefined = cust;
+    let targetBill: Bill | undefined = bill;
 
-  const handleOpenAddModal = (cust?: Customer) => {
-    if (cust) {
-      setPayCustId(cust.id);
-      setSelectedCollectCust(cust);
+    if (!targetCust && targetBill) {
+      targetCust = customers.find((c) => c.id === targetBill?.customerId || c.name === targetBill?.customerName);
+    }
+    if (!targetCust && customers.length > 0) {
+      targetCust = customers.find((c) => (c.dueBalance || 0) > 0) || customers[0];
+    }
+
+    if (targetCust) {
+      setPayCustId(targetCust.id);
+      setSelectedCollectCust(targetCust);
+
+      if (!targetBill) {
+        targetBill = bills.find(
+          (b) => (b.customerId === targetCust?.id || b.customerName === targetCust?.name) && (b.calculation?.dueAmount || 0) > 0
+        );
+      }
+
+      if (targetBill) {
+        setPayInvoiceNo(targetBill.invoiceNo);
+        const amountToCollect = (targetBill.calculation?.dueAmount || 0) > 0 
+          ? targetBill.calculation.dueAmount 
+          : targetCust.dueBalance || 0;
+        setPayAmount(amountToCollect);
+        setPayNotes(`Due Collection for ${targetBill.invoiceNo}`);
+      } else {
+        setPayInvoiceNo("");
+        setPayAmount(targetCust.dueBalance || 0);
+        setPayNotes(targetCust.dueBalance > 0 ? `Due Collection - ${targetCust.name}` : "");
+      }
+      setPayRef(`REC-${Date.now().toString().slice(-6)}`);
     } else {
-      setPayCustId(customers[0]?.id || "");
-      setSelectedCollectCust(customers[0] || null);
+      setPayCustId("");
+      setSelectedCollectCust(null);
+      setPayInvoiceNo("");
+      setPayAmount(0);
+      setPayRef(`REC-${Date.now().toString().slice(-6)}`);
+      setPayNotes("");
     }
     setShowAddModal(true);
   };
@@ -164,6 +258,11 @@ export default function PaymentsPage() {
     recordPayment(targetCust.id, payAmount);
 
     const refStr = payRef || `REC-${Date.now().toString().slice(-6)}`;
+
+    // If an invoice is linked, update its payment status
+    if (payInvoiceNo) {
+      recordBillPayment(payInvoiceNo, payAmount);
+    }
 
     addLedgerEntry({
       partyId: targetCust.id,
@@ -185,12 +284,13 @@ export default function PaymentsPage() {
       amount: payAmount,
       method: payMethod,
       referenceNo: refStr,
-      notes: payNotes,
+      notes: payNotes || "Due Collection",
       status: "COMPLETED",
     });
 
     setShowAddModal(false);
     setPayAmount(0);
+    setPayInvoiceNo("");
     setPayRef("");
     setPayNotes("");
   };
@@ -220,6 +320,19 @@ export default function PaymentsPage() {
         subtitle="Live payment stream, cash audit log, due collection & instant customer reconciliation"
         action={
           <div className="flex gap-2">
+            {payments.length > 0 && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  if (confirm("Kya aap sabhi purani/placeholder payments delete karna chahte hain?")) {
+                    clearPayments();
+                  }
+                }}
+              >
+                Clear All Payments
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={handleExportCSV} icon={<Download className="w-4 h-4" />}>
               Export CSV
             </Button>
@@ -252,9 +365,29 @@ export default function PaymentsPage() {
           <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-400 block">Bank</span>
           <span className="text-base font-extrabold text-amber-300 mt-1 block">{formatCurrency(kpis.bankToday)}</span>
         </div>
-        <div className="glass-panel p-3.5 rounded-xl border border-rose-500/20 bg-rose-500/5">
-          <span className="text-[9px] font-extrabold uppercase tracking-wider text-rose-400 block">Due Collection</span>
-          <span className="text-base font-extrabold text-rose-300 mt-1 block">{formatCurrency(kpis.dueCollectionToday)}</span>
+        <div className="glass-panel p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 relative overflow-hidden">
+          <div className="flex justify-between items-center">
+            <span className="text-[9px] font-extrabold uppercase tracking-wider text-rose-400 block">
+              Pending Due (उधारी)
+            </span>
+            {kpis.dueCollectionToday > 0 ? (
+              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                +₹{kpis.dueCollectionToday} Rec
+              </span>
+            ) : (
+              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">
+                {dueCustomers.length} Due
+              </span>
+            )}
+          </div>
+          <span className="text-base font-extrabold text-rose-300 mt-1 block">
+            {formatCurrency(totalOutstandingDue)}
+          </span>
+          <span className="text-[9px] text-slate-400 block mt-0.5 truncate">
+            {kpis.dueCollectionToday > 0
+              ? `Today Rec: ${formatCurrency(kpis.dueCollectionToday)}`
+              : "Baki Vasooli Pending"}
+          </span>
         </div>
         <div className="glass-panel p-3.5 rounded-xl border border-gold-500/15">
           <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 block">Total Transactions</span>
@@ -392,89 +525,162 @@ export default function PaymentsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPayments.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell className="text-xs text-slate-400">
-                  {formatDate(p.date)} • {formatTime(p.date)}
-                </TableCell>
-                <TableCell>
-                  <button
-                    onClick={() => {
-                      const matched = bills.find((b) => b.invoiceNo === p.invoiceNo);
-                      if (matched) setSelectedPaymentBill(matched);
-                      else setSelectedPayment(p);
-                    }}
-                    className="font-mono font-bold text-gold-400 hover:text-gold-300 hover:underline text-left cursor-pointer"
-                  >
-                    {p.invoiceNo}
-                  </button>
-                </TableCell>
-                <TableCell>
-                  <button
-                    onClick={() => {
-                      const matchedCust = customers.find((c) => c.id === p.customerId || c.name === p.customerName);
-                      if (matchedCust) setSelectedCustForDrawer(matchedCust);
-                    }}
-                    className="font-bold text-slate-100 hover:text-gold-400 hover:underline text-left cursor-pointer"
-                  >
-                    {p.customerName}
-                  </button>
-                </TableCell>
-                <TableCell className="font-mono text-xs text-slate-300">
-                  {normalizeIndianMobile(p.customerPhone || "")}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="gold">{p.method}</Badge>
-                </TableCell>
-                <TableCell className="font-mono text-xs text-slate-300">{p.referenceNo || "POS-CASH"}</TableCell>
-                <TableCell className="font-extrabold text-emerald-400">{formatCurrency(p.amount)}</TableCell>
-                <TableCell>
-                  <Badge variant={p.status === "COMPLETED" ? "paid" : p.status === "REFUNDED" ? "due" : "neutral"}>
-                    {p.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedPayment(p)}
-                    icon={<Eye className="w-3.5 h-3.5" />}
-                  >
-                    View
-                  </Button>
+            {filteredPayments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-10 text-slate-400">
+                  Koi payment ya due record nahi mila.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filteredPayments.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="text-xs text-slate-400">
+                    {formatDate(p.date)} • {formatTime(p.date)}
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => {
+                        const matched = bills.find((b) => b.invoiceNo === p.invoiceNo);
+                        if (matched) setSelectedPaymentBill(matched);
+                        else setSelectedPayment(p);
+                      }}
+                      className="font-mono font-bold text-gold-400 hover:text-gold-300 hover:underline text-left cursor-pointer"
+                    >
+                      {p.invoiceNo}
+                    </button>
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => {
+                        const matchedCust = customers.find((c) => c.id === p.customerId || c.name === p.customerName);
+                        if (matchedCust) setSelectedCustForDrawer(matchedCust);
+                      }}
+                      className="font-bold text-slate-100 hover:text-gold-400 hover:underline text-left cursor-pointer"
+                    >
+                      {p.customerName}
+                    </button>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-slate-300">
+                    {normalizeIndianMobile(p.customerPhone || "")}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="gold">{p.method}</Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-slate-300">{p.referenceNo || "POS-CASH"}</TableCell>
+                  <TableCell className="font-extrabold text-emerald-400">{formatCurrency(p.amount)}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        p.status === "COMPLETED"
+                          ? "paid"
+                          : p.status === "PENDING"
+                          ? "due"
+                          : p.status === "REFUNDED"
+                          ? "due"
+                          : "neutral"
+                      }
+                    >
+                      {p.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {p.status === "PENDING" && (
+                        <Button
+                          variant="gold"
+                          size="sm"
+                          onClick={() => {
+                            const matchedBill = bills.find((b) => b.invoiceNo === p.invoiceNo);
+                            const matchedCust = customers.find((c) => c.id === p.customerId || c.name === p.customerName);
+                            handleOpenAddModal(matchedCust, matchedBill);
+                          }}
+                          className="text-[10px] px-2.5 py-1 font-bold shadow-sm"
+                        >
+                          Collect
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const matched = bills.find((b) => b.invoiceNo === p.invoiceNo);
+                          if (matched) setSelectedPaymentBill(matched);
+                          else setSelectedPayment(p);
+                        }}
+                        icon={<Eye className="w-3.5 h-3.5" />}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
 
       {/* 5. Mobile Responsive Payment Cards View */}
       <div className="sm:hidden space-y-3">
-        {filteredPayments.map((p) => (
-          <div
-            key={p.id}
-            onClick={() => setSelectedPayment(p)}
-            className="glass-panel p-4 rounded-xl border border-gold-500/20 space-y-2 cursor-pointer active:scale-98 transition-all"
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h5 className="font-bold text-slate-100 text-sm">{p.customerName}</h5>
-                <p className="text-[10px] text-slate-400 font-mono">
-                  {formatDate(p.date)} • {formatTime(p.date)}
-                </p>
-              </div>
-              <span className="text-base font-extrabold text-emerald-400">{formatCurrency(p.amount)}</span>
-            </div>
-            <div className="flex justify-between items-center text-xs pt-2 border-t border-gold-500/10">
-              <span className="font-mono font-bold text-gold-400">{p.invoiceNo}</span>
-              <div className="flex gap-1.5">
-                <Badge variant="gold">{p.method}</Badge>
-                <Badge variant={p.status === "COMPLETED" ? "paid" : "due"}>{p.status}</Badge>
-              </div>
-            </div>
+        {filteredPayments.length === 0 ? (
+          <div className="glass-panel p-8 text-center text-slate-400 rounded-xl border border-gold-500/10">
+            Koi payment ya due record nahi mila.
           </div>
-        ))}
+        ) : (
+          filteredPayments.map((p) => (
+            <div
+              key={p.id}
+              onClick={() => {
+                const matched = bills.find((b) => b.invoiceNo === p.invoiceNo);
+                if (matched) setSelectedPaymentBill(matched);
+                else setSelectedPayment(p);
+              }}
+              className="glass-panel p-4 rounded-xl border border-gold-500/20 space-y-2 cursor-pointer active:scale-98 transition-all"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h5 className="font-bold text-slate-100 text-sm">{p.customerName}</h5>
+                  <p className="text-[10px] text-slate-400 font-mono">
+                    {formatDate(p.date)} • {formatTime(p.date)}
+                  </p>
+                </div>
+                <span className="text-base font-extrabold text-emerald-400">{formatCurrency(p.amount)}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs pt-2 border-t border-gold-500/10">
+                <span className="font-mono font-bold text-gold-400">{p.invoiceNo}</span>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="gold">{p.method}</Badge>
+                  <Badge
+                    variant={
+                      p.status === "COMPLETED"
+                        ? "paid"
+                        : p.status === "PENDING"
+                        ? "due"
+                        : "neutral"
+                    }
+                  >
+                    {p.status}
+                  </Badge>
+                  {p.status === "PENDING" && (
+                    <Button
+                      variant="gold"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const matchedBill = bills.find((b) => b.invoiceNo === p.invoiceNo);
+                        const matchedCust = customers.find((c) => c.id === p.customerId || c.name === p.customerName);
+                        handleOpenAddModal(matchedCust, matchedBill);
+                      }}
+                      className="text-[10px] px-2 py-0.5 font-bold"
+                    >
+                      Collect
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* 6. Payment Detail Drawer */}
@@ -491,9 +697,26 @@ export default function PaymentsPage() {
             label="Select Customer *"
             value={payCustId}
             onChange={(e) => {
-              setPayCustId(e.target.value);
-              const found = customers.find((c) => c.id === e.target.value);
+              const custId = e.target.value;
+              setPayCustId(custId);
+              const found = customers.find((c) => c.id === custId);
               setSelectedCollectCust(found || null);
+              if (found) {
+                const customerDueBill = bills.find(
+                  (b) =>
+                    (b.customerId === found.id || b.customerName === found.name) &&
+                    (b.calculation?.dueAmount || 0) > 0
+                );
+                if (customerDueBill) {
+                  setPayInvoiceNo(customerDueBill.invoiceNo);
+                  setPayAmount(customerDueBill.calculation.dueAmount);
+                  setPayNotes(`Due Collection for ${customerDueBill.invoiceNo}`);
+                } else {
+                  setPayInvoiceNo("");
+                  setPayAmount(found.dueBalance || 0);
+                  setPayNotes(found.dueBalance > 0 ? `Due Collection - ${found.name}` : "");
+                }
+              }
             }}
             options={customers.map((c) => ({
               label: `${c.name} (${c.phone}) ${c.dueBalance > 0 ? `- Due ${formatCurrency(c.dueBalance)}` : ""}`,
@@ -502,9 +725,18 @@ export default function PaymentsPage() {
           />
 
           {selectedCollectCust && selectedCollectCust.dueBalance > 0 && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs flex justify-between">
-              <span className="text-slate-300">Outstanding Due Balance:</span>
-              <span className="font-extrabold text-rose-400">{formatCurrency(selectedCollectCust.dueBalance)}</span>
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs flex justify-between items-center">
+              <div>
+                <span className="text-slate-300 block">Outstanding Due Balance:</span>
+                <span className="font-extrabold text-rose-400 text-sm">{formatCurrency(selectedCollectCust.dueBalance)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPayAmount(selectedCollectCust.dueBalance)}
+                className="text-[10px] bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold px-2 py-1 rounded border border-rose-500/30 transition-colors"
+              >
+                Fill Full Due ({formatCurrency(selectedCollectCust.dueBalance)})
+              </button>
             </div>
           )}
 

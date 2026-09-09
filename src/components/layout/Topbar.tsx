@@ -53,12 +53,12 @@ export const Topbar: React.FC = () => {
   const hasSearchQuery = globalSearch.trim().length > 0;
 
   const handleResetDemoData = () => {
-    if (confirm("Are you sure you want to reset all demo data (Bills, Products, Customers, Ledger) to original initial state?")) {
+    if (confirm("Reset store data (Bills, Customers, Ledger) back to clean Rajdhani Home Decor initial state?")) {
       resetBills();
       resetProducts();
       resetCustomers();
       resetLedger();
-      alert("Demo data successfully restored to fresh initial state!");
+      alert("Store data successfully restored to fresh Rajdhani Home Decor state!");
     }
   };
 
@@ -66,9 +66,16 @@ export const Topbar: React.FC = () => {
     <header className="h-16 bg-obsidian-950/90 border-b border-gold-500/15 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
       {/* Left: Store Name / Grouped Global Search */}
       <div className="flex items-center gap-4 flex-1 max-w-xl">
-        <h1 className="text-sm font-bold tracking-wider uppercase text-slate-100 hidden sm:block whitespace-nowrap">
-          ✦ <span className="gold-gradient-text">{settings.storeName}</span>
-        </h1>
+        <div className="flex items-center gap-2.5 hidden sm:flex">
+          <img
+            src="/logo/store-logo.png"
+            alt="Logo"
+            className="w-8 h-8 rounded-lg object-cover border border-gold-500/30 shadow-gold shrink-0"
+          />
+          <h1 className="text-xs font-extrabold tracking-wider uppercase text-slate-100 whitespace-nowrap">
+            <span className="gold-gradient-text">{settings.storeName}</span>
+          </h1>
+        </div>
         <div className="relative w-full">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -176,15 +183,6 @@ export const Topbar: React.FC = () => {
           </Button>
         </Link>
 
-        <button
-          onClick={handleResetDemoData}
-          title="Restore Initial Demo Data"
-          className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-obsidian-900 border border-gold-500/20 text-slate-300 hover:text-gold-400 hover:border-gold-500/40 transition-all"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Reset Demo</span>
-        </button>
-
         {/* Notifications Dropdown */}
         <div className="relative">
           <button
@@ -203,17 +201,26 @@ export const Topbar: React.FC = () => {
             <div className="absolute right-0 top-12 w-72 glass-panel border border-gold-500/30 rounded-2xl shadow-glass p-3 z-50 text-xs">
               <div className="flex justify-between items-center pb-2 border-b border-gold-500/20 font-bold text-slate-200">
                 <span>Notifications</span>
-                <span className="text-[10px] text-gold-400">3 New</span>
+                <span className="text-[10px] text-gold-400">Store Active</span>
               </div>
               <div className="py-2 space-y-2">
-                <div className="p-2 bg-obsidian-900/80 rounded border border-gold-500/10">
-                  <p className="font-semibold text-emerald-400">Bill INV-2026-00310 Generated</p>
-                  <p className="text-[10px] text-slate-400">₹2,450 paid via UPI by Rahul Sharma</p>
-                </div>
-                <div className="p-2 bg-obsidian-900/80 rounded border border-gold-500/10">
-                  <p className="font-semibold text-amber-400">Low Stock Alert</p>
-                  <p className="text-[10px] text-slate-400">Nautilus Steel Blue Dial (1 left)</p>
-                </div>
+                {products.filter((p) => p.stock <= p.minStockAlert).slice(0, 2).map((lp) => (
+                  <div key={lp.id} className="p-2 bg-obsidian-900/80 rounded border border-gold-500/10">
+                    <p className="font-semibold text-amber-400">Low Stock Alert</p>
+                    <p className="text-[10px] text-slate-400">{lp.name} ({lp.stock} left)</p>
+                  </div>
+                ))}
+                {bills.length > 0 ? (
+                  <div className="p-2 bg-obsidian-900/80 rounded border border-gold-500/10">
+                    <p className="font-semibold text-emerald-400">Latest Bill {bills[0].invoiceNo}</p>
+                    <p className="text-[10px] text-slate-400">{formatCurrency(bills[0].calculation.grandTotal)} by {bills[0].customerName}</p>
+                  </div>
+                ) : (
+                  <div className="p-2 bg-obsidian-900/80 rounded border border-gold-500/10">
+                    <p className="font-semibold text-gold-400">Ready for Billing</p>
+                    <p className="text-[10px] text-slate-400">All 9 Rajdhani Home Decor products loaded</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -229,17 +236,18 @@ export const Topbar: React.FC = () => {
             className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg border border-gold-500/20 bg-obsidian-900 hover:border-gold-500/40 text-xs"
           >
             <div className="w-6 h-6 rounded-full bg-gold-500/20 text-gold-400 flex items-center justify-center font-bold text-[10px]">
-              AD
+              AL
             </div>
-            <span className="font-semibold text-slate-200 hidden sm:inline">Admin</span>
+            <span className="font-semibold text-slate-200 hidden sm:inline">Aalim (Owner)</span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </button>
 
           {showProfile && (
-            <div className="absolute right-0 top-12 w-48 glass-panel border border-gold-500/30 rounded-2xl shadow-glass p-2 z-50 text-xs">
+            <div className="absolute right-0 top-12 w-52 glass-panel border border-gold-500/30 rounded-2xl shadow-glass p-2 z-50 text-xs">
               <div className="p-2 border-b border-gold-500/15">
-                <p className="font-bold text-slate-100">Store Manager</p>
-                <p className="text-[10px] text-slate-400">admin@luxurystore.com</p>
+                <p className="font-bold text-slate-100">Aalim (Proprietor)</p>
+                <p className="text-[10px] text-slate-400">{settings.email || "rajdhanihomedecor@gmail.com"}</p>
+                <p className="text-[10px] text-gold-400 font-mono mt-0.5">Mob: {settings.phone}</p>
               </div>
               <Link href="/settings" className="block px-3 py-2 hover:bg-obsidian-900 text-slate-300 rounded-lg">
                 Store Settings

@@ -5,8 +5,8 @@ import { Topbar } from "@/components/layout/Topbar";
 import { MobileNav } from "@/components/layout/MobileNav";
 
 export const metadata: Metadata = {
-  title: "LUXURY STORE - Billing & POS System",
-  description: "Ultra-premium Billing, POS, Invoice Generator, Customer Ledger & Inventory Management Software",
+  title: "RAJDHANI HOME DECOR - Billing & POS System",
+  description: "PVC Panels, WPC Louvers, Fluted Panels, Charcoal Panels & Interior Decor Billing System",
 };
 
 export default function RootLayout({

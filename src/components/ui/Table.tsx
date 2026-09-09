@@ -32,6 +32,6 @@ export const TableRow: React.FC<{ children: React.ReactNode; className?: string 
   </tr>
 );
 
-export const TableCell: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-  <td className={cn("px-4 py-3 whitespace-nowrap", className)}>{children}</td>
+export const TableCell: React.FC<{ children: React.ReactNode; className?: string; colSpan?: number }> = ({ children, className, colSpan }) => (
+  <td colSpan={colSpan} className={cn("px-4 py-3 whitespace-nowrap", className)}>{children}</td>
 );

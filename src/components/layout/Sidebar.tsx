@@ -28,7 +28,7 @@ const NAV_ITEMS = [
   { label: "Payments", path: "/payments", icon: CreditCard },
   { label: "Reports", path: "/reports", icon: BarChart3 },
   { label: "Bill Design", path: "/bill-design", icon: Palette, badge: "Studio" },
-  { label: "Bill Gallery", path: "/bill-gallery", icon: Images, badge: "300+" },
+  { label: "Bill Gallery", path: "/bill-gallery", icon: Images, badge: "Invoices" },
   { label: "Settings", path: "/settings", icon: Settings },
 ];
 
@@ -40,15 +40,19 @@ export const Sidebar: React.FC = () => {
     <aside className="w-64 bg-obsidian-950/90 border-r border-gold-500/20 flex flex-col justify-between hidden md:flex min-h-screen sticky top-0 z-30">
       <div>
         {/* Store Brand */}
-        <div className="p-6 border-b border-gold-500/15 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-gold-600 via-gold-400 to-amber-200 flex items-center justify-center text-obsidian-950 font-bold shadow-gold">
-            <Sparkles className="w-5 h-5 fill-current" />
+        <div className="p-5 border-b border-gold-500/15 flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl overflow-hidden border border-gold-500/40 shadow-gold bg-obsidian-900 flex items-center justify-center shrink-0">
+            <img
+              src="/logo/store-logo.png"
+              alt="Rajdhani Home Decor"
+              className="w-full h-full object-cover"
+            />
           </div>
-          <div>
-            <h2 className="font-extrabold text-sm tracking-wider text-slate-100 uppercase gold-gradient-text">
-              {settings.storeName || "LUXURY STORE"}
+          <div className="min-w-0">
+            <h2 className="font-extrabold text-xs tracking-wider text-slate-100 uppercase gold-gradient-text leading-tight truncate">
+              {settings.storeName || "RAJDHANI HOME DECOR"}
             </h2>
-            <p className="text-[10px] uppercase tracking-widest text-gold-400/80 font-semibold">
+            <p className="text-[9px] uppercase tracking-widest text-gold-400/80 font-semibold mt-0.5">
               Billing POS System
             </p>
           </div>
@@ -63,6 +67,7 @@ export const Sidebar: React.FC = () => {
               <Link
                 key={item.path}
                 href={item.path}
+                prefetch={true}
                 className={cn(
                   "flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold transition-all group",
                   isActive

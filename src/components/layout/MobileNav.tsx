@@ -39,6 +39,7 @@ export const MobileNav: React.FC = () => {
           <Link
             key={item.path}
             href={item.path}
+            prefetch={true}
             className={cn(
               "flex flex-col items-center justify-center min-w-[58px] gap-1 py-1 px-1.5 rounded-xl text-[10px] font-semibold transition-all active:scale-95",
               isActive

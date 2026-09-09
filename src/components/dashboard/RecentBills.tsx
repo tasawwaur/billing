@@ -57,7 +57,14 @@ export const RecentBills: React.FC<RecentBillsProps> = ({ bills }) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {bills.slice(0, 8).map((bill) => (
+          {bills.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-8 text-slate-400">
+                No invoices generated yet. Click &quot;Create New Bill&quot; or open POS screen to begin billing!
+              </TableCell>
+            </TableRow>
+          ) : (
+            bills.slice(0, 8).map((bill) => (
             <TableRow key={bill.id}>
               <TableCell>
                 <button
@@ -104,7 +111,8 @@ export const RecentBills: React.FC<RecentBillsProps> = ({ bills }) => {
                 </Button>
               </TableCell>
             </TableRow>
-          ))}
+            ))
+          )}
         </TableBody>
       </Table>
 
@@ -131,7 +139,7 @@ export const RecentBills: React.FC<RecentBillsProps> = ({ bills }) => {
               </Button>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto rounded-xl border border-slate-200">
+            <div className="max-h-[70vh] overflow-y-auto overflow-x-auto rounded-xl border border-slate-200">
               <BillTemplateA4 bill={selectedBill} settings={settings} />
             </div>
           </div>

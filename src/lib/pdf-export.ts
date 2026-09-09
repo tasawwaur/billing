@@ -80,7 +80,7 @@ function getOrCreateBillElement(
         </div>
         <div style="text-align: right;">
           <p style="margin: 0;">Subtotal: <strong>₹${bill.calculation.subtotal.toLocaleString("en-IN")}</strong></p>
-          ${bill.calculation.discount > 0 ? `<p style="margin: 2px 0 0; color: #e11d48;">Discount: -₹${bill.calculation.discount.toLocaleString("en-IN")}</p>` : ""}
+          ${bill.calculation.orderDiscount > 0 ? `<p style="margin: 2px 0 0; color: #e11d48;">Discount: -₹${bill.calculation.orderDiscount.toLocaleString("en-IN")}</p>` : ""}
           ${bill.calculation.totalTax > 0 ? `<p style="margin: 2px 0 0;">GST Tax: ₹${bill.calculation.totalTax.toLocaleString("en-IN")}</p>` : ""}
           <h3 style="margin: 8px 0 0; font-size: 18px; color: #d4af37;">Grand Total: ₹${bill.calculation.grandTotal.toLocaleString("en-IN")}</h3>
         </div>
