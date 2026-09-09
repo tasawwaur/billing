@@ -15,7 +15,7 @@ export const DueCard: React.FC<DueCardProps> = ({ lowStockCount, onClick }) => {
       <div className="flex justify-between items-start">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Inventory Status</span>
-          <h3 className="text-2xl font-extrabold text-amber-300 mt-1">{lowStockCount} Low Stock</h3>
+          <h3 className="text-2xl font-extrabold text-amber-300 mt-1" suppressHydrationWarning>{lowStockCount} Low Stock</h3>
         </div>
         <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 group-hover:bg-amber-500/20 transition-colors">
           <AlertTriangle className="w-5 h-5" />

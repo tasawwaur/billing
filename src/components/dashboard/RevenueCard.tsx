@@ -35,7 +35,7 @@ export const RevenueCard: React.FC<RevenueCardProps> = ({
             <ArrowDownLeft className="w-3.5 h-3.5" />
             <span>Receivable</span>
           </div>
-          <p className="text-lg font-bold text-emerald-300 mt-1">{formatCurrency(receivable)}</p>
+          <p className="text-lg font-bold text-emerald-300 mt-1" suppressHydrationWarning>{formatCurrency(receivable)}</p>
         </div>
         <div
           onClick={(e) => {
@@ -48,7 +48,7 @@ export const RevenueCard: React.FC<RevenueCardProps> = ({
             <ArrowUpRight className="w-3.5 h-3.5" />
             <span>Payable</span>
           </div>
-          <p className="text-lg font-bold text-rose-300 mt-1">{formatCurrency(payable)}</p>
+          <p className="text-lg font-bold text-rose-300 mt-1" suppressHydrationWarning>{formatCurrency(payable)}</p>
         </div>
       </div>
     </div>

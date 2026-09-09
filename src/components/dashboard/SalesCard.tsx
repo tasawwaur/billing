@@ -17,7 +17,7 @@ export const SalesCard: React.FC<SalesCardProps> = ({ salesToday, billsCountToda
       <div className="flex justify-between items-start">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-gold-400">Today's Sales</span>
-          <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-100 mt-1 gold-gradient-text">
+          <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-100 mt-1 gold-gradient-text" suppressHydrationWarning>
             {formatCurrency(salesToday)}
           </h3>
         </div>
