@@ -26,12 +26,12 @@ export const TableBody: React.FC<{ children: React.ReactNode }> = ({ children })
   <tbody className="divide-y divide-gold-500/10 text-slate-200">{children}</tbody>
 );
 
-export const TableRow: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-  <tr className={cn("hover:bg-obsidian-800/50 transition-colors", className)}>
+export const TableRow: React.FC<{ children: React.ReactNode; className?: string; suppressHydrationWarning?: boolean }> = ({ children, className, suppressHydrationWarning }) => (
+  <tr suppressHydrationWarning={suppressHydrationWarning} className={cn("hover:bg-obsidian-800/50 transition-colors", className)}>
     {children}
   </tr>
 );
 
-export const TableCell: React.FC<{ children: React.ReactNode; className?: string; colSpan?: number }> = ({ children, className, colSpan }) => (
-  <td colSpan={colSpan} className={cn("px-4 py-3 whitespace-nowrap", className)}>{children}</td>
+export const TableCell: React.FC<{ children: React.ReactNode; className?: string; colSpan?: number; suppressHydrationWarning?: boolean }> = ({ children, className, colSpan, suppressHydrationWarning }) => (
+  <td colSpan={colSpan} suppressHydrationWarning={suppressHydrationWarning} className={cn("px-4 py-3 whitespace-nowrap", className)}>{children}</td>
 );

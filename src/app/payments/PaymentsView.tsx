@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useMemo, useDeferredValue } from "react";
 import { useLedgerStore } from "@/store/ledger-store";
@@ -316,7 +316,7 @@ export const PaymentsView = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="ðŸ’³ Payment Management & Reconciliation"
+        title="Payment Management & Reconciliation"
         subtitle="Live payment stream, cash audit log, due collection & instant customer reconciliation"
         action={
           <div className="flex gap-2">
@@ -372,7 +372,7 @@ export const PaymentsView = () => {
             </span>
             {kpis.dueCollectionToday > 0 ? (
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                +â‚¹{kpis.dueCollectionToday} Rec
+                +₹{kpis.dueCollectionToday} Rec
               </span>
             ) : (
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">
@@ -453,7 +453,7 @@ export const PaymentsView = () => {
             </div>
             <div>
               <span className="text-slate-400">Difference: </span>
-              <strong className="text-gold-400">â‚¹0</strong>
+              <strong className="text-gold-400">₹0</strong>
             </div>
           </div>
         </div>
@@ -535,7 +535,7 @@ export const PaymentsView = () => {
               filteredPayments.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="text-xs text-slate-400">
-                    {formatDate(p.date)} â€¢ {formatTime(p.date)}
+                    {formatDate(p.date)} • {formatTime(p.date)}
                   </TableCell>
                   <TableCell>
                     <button
@@ -641,7 +641,7 @@ export const PaymentsView = () => {
                 <div>
                   <h5 className="font-bold text-slate-100 text-sm">{p.customerName}</h5>
                   <p className="text-[10px] text-slate-400 font-mono">
-                    {formatDate(p.date)} â€¢ {formatTime(p.date)}
+                    {formatDate(p.date)} • {formatTime(p.date)}
                   </p>
                 </div>
                 <span className="text-base font-extrabold text-emerald-400">{formatCurrency(p.amount)}</span>
@@ -748,7 +748,7 @@ export const PaymentsView = () => {
           />
 
           <Input
-            label="Payment Amount Received (â‚¹) *"
+            label="Payment Amount Received (₹) *"
             type="number"
             value={payAmount || ""}
             onChange={(e) => setPayAmount(Number(e.target.value))}

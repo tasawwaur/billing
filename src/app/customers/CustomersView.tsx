@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useMemo, useDeferredValue, useCallback } from "react";
 import { useCustomerStore } from "@/store/customer-store";
@@ -230,14 +230,14 @@ export const CustomersView = () => {
     { id: "due", label: "Lena Hai (Dues)", count: summaryMetrics.dueCount, color: "text-rose-400" },
     { id: "dena", label: "Dena Hai (Payables)", count: summaryMetrics.denaCount, color: "text-blue-400" },
     { id: "clear", label: "Clear (No Dues)", count: summaryMetrics.clearCount, color: "text-emerald-400" },
-    { id: "vip", label: "VIP (> â‚¹1 Lakh)", count: summaryMetrics.vipCount, color: "text-gold-400" },
+    { id: "vip", label: "VIP (> ₹1 Lakh)", count: summaryMetrics.vipCount, color: "text-gold-400" },
     { id: "gstin", label: "Business GSTIN", count: summaryMetrics.gstinCount, color: "text-purple-400" },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="ðŸ‘¥ Customers & Client CRM"
+        title="Customers & Client CRM"
         subtitle={`Directory of ${customers.length} registered clientele & credit accounts`}
         action={
           <Button variant="gold" onClick={() => setShowAddModal(true)} icon={<Plus className="w-4 h-4" />}>
@@ -263,7 +263,7 @@ export const CustomersView = () => {
           </div>
           <h3 className="text-2xl font-extrabold text-slate-100 mt-2">{summaryMetrics.allCount}</h3>
           <p className="text-[10px] text-slate-400 mt-1 group-hover:text-gold-400 transition-colors">
-            Click to view all registered accounts â†’
+            Click to view all registered accounts →
           </p>
         </div>
 
@@ -287,7 +287,7 @@ export const CustomersView = () => {
           </div>
           <h3 className="text-2xl font-extrabold text-rose-300 mt-2">{formatCurrency(summaryMetrics.totalLena)}</h3>
           <p className="text-[10px] text-slate-400 mt-1 group-hover:text-rose-400 transition-colors">
-            Click to filter customers with dues â†’
+            Click to filter customers with dues →
           </p>
         </div>
 
@@ -311,7 +311,7 @@ export const CustomersView = () => {
           </div>
           <h3 className="text-2xl font-extrabold text-blue-300 mt-2">{formatCurrency(summaryMetrics.totalDena)}</h3>
           <p className="text-[10px] text-slate-400 mt-1 group-hover:text-blue-400 transition-colors">
-            Click to filter customers with payables â†’
+            Click to filter customers with payables →
           </p>
         </div>
 
@@ -330,7 +330,7 @@ export const CustomersView = () => {
           </div>
           <h3 className="text-2xl font-extrabold text-emerald-300 mt-2">{summaryMetrics.clearCount}</h3>
           <p className="text-[10px] text-slate-400 mt-1 group-hover:text-emerald-400 transition-colors">
-            Click to filter zero-balance accounts â†’
+            Click to filter zero-balance accounts →
           </p>
         </div>
       </div>
@@ -420,7 +420,7 @@ export const CustomersView = () => {
                   <span className="text-slate-300">| {cust.totalBills} Bills</span>
                   {lastBill && (
                     <span className="text-gold-400">
-                      | Last Bill {formatCurrency(lastBill.calculation.grandTotal)} ({formatDate(lastBill.date)} â€¢ {formatTime(lastBill.date)})
+                      | Last Bill {formatCurrency(lastBill.calculation.grandTotal)} ({formatDate(lastBill.date)} • {formatTime(lastBill.date)})
                     </span>
                   )}
                 </div>
@@ -532,14 +532,14 @@ export const CustomersView = () => {
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs text-slate-400 font-bold hover:text-blue-400 transition-colors cursor-pointer">
-                        â‚¹0
+                        ₹0
                       </span>
                     )}
                   </button>
                 </TableCell>
 
                 <TableCell className="text-xs text-slate-400">
-                  {lastBill ? `${formatDate(lastBill.date)} â€¢ ${formatTime(lastBill.date)}` : formatDate(cust.createdAt)}
+                  {lastBill ? `${formatDate(lastBill.date)} • ${formatTime(lastBill.date)}` : formatDate(cust.createdAt)}
                 </TableCell>
 
                 <TableCell className="text-right">
@@ -604,7 +604,7 @@ export const CustomersView = () => {
         <Modal
           isOpen={!!settleCustomer}
           onClose={() => setSettleCustomer(null)}
-          title={`ðŸ’³ Settlement & Payment - ${settleCustomer.name}`}
+          title={`Settlement & Payment - ${settleCustomer.name}`}
         >
           <form onSubmit={handleSaveSettlement} className="space-y-4">
             {/* Mode Selector */}
@@ -622,7 +622,7 @@ export const CustomersView = () => {
                 }`}
               >
                 <ArrowDownLeft className="w-4 h-4" />
-                <span>Receive Lena (â‚¹{settleCustomer.dueBalance})</span>
+                <span>Receive Lena (₹{settleCustomer.dueBalance})</span>
               </button>
               <button
                 type="button"
@@ -637,7 +637,7 @@ export const CustomersView = () => {
                 }`}
               >
                 <ArrowUpRight className="w-4 h-4" />
-                <span>Pay Dena (â‚¹{settleCustomer.denaBalance || 0})</span>
+                <span>Pay Dena (₹{settleCustomer.denaBalance || 0})</span>
               </button>
             </div>
 
@@ -679,7 +679,7 @@ export const CustomersView = () => {
             )}
 
             <Input
-              label={settleMode === "RECEIVE_LENA" ? "Received Amount (â‚¹) *" : "Amount Paid to Customer (â‚¹) *"}
+              label={settleMode === "RECEIVE_LENA" ? "Received Amount (₹) *" : "Amount Paid to Customer (₹) *"}
               type="number"
               value={settleAmount || ""}
               onChange={(e) => setSettleAmount(Number(e.target.value))}

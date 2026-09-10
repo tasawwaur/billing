@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useMemo, useDeferredValue } from "react";
 import { useLedgerStore } from "@/store/ledger-store";
@@ -126,7 +126,7 @@ export const LedgerView = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="ðŸ“– Customer Ledger (Khata Account)"
+        title="Customer Ledger (Khata Account)"
         subtitle="Party Credit / Debit Account Tracker, Statement Breakdown & Tax Invoice Viewer"
         action={
           <Button variant="gold" onClick={() => setShowAddModal(true)} icon={<Plus className="w-4 h-4" />}>
@@ -151,7 +151,7 @@ export const LedgerView = () => {
             </div>
             <h3 className="text-2xl font-extrabold text-emerald-300 mt-1">{formatCurrency(totalReceivables)}</h3>
             <p className="text-[10px] text-slate-400 mt-0.5 group-hover:text-emerald-400 transition-colors">
-              Click to view customer dues list â†’
+              Click to view customer dues list →
             </p>
           </div>
           <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl group-hover:bg-emerald-500/20 transition-colors">
@@ -173,7 +173,7 @@ export const LedgerView = () => {
             </div>
             <h3 className="text-2xl font-extrabold text-rose-300 mt-1">{formatCurrency(totalPayables)}</h3>
             <p className="text-[10px] text-slate-400 mt-0.5 group-hover:text-rose-400 transition-colors">
-              Click to view supplier payables â†’
+              Click to view supplier payables →
             </p>
           </div>
           <div className="p-3 bg-rose-500/10 text-rose-400 rounded-xl group-hover:bg-rose-500/20 transition-colors">
@@ -190,7 +190,7 @@ export const LedgerView = () => {
             <span className="text-xs font-bold uppercase tracking-wider text-gold-400">Net Khata Balance</span>
             <h3 className="text-2xl font-extrabold text-gold-300 mt-1">{formatCurrency(netBalance)}</h3>
             <p className="text-[10px] text-slate-400 mt-0.5 group-hover:text-gold-400 transition-colors">
-              Click to view net balance breakdown â†’
+              Click to view net balance breakdown →
             </p>
           </div>
           <div className="p-3 bg-gold-500/10 text-gold-400 rounded-xl group-hover:bg-gold-500/20 transition-colors">
@@ -266,7 +266,7 @@ export const LedgerView = () => {
       <Modal
         isOpen={showReceivablesModal}
         onClose={() => setShowReceivablesModal(false)}
-        title={`ðŸ“¥ Receivables Breakdown - Kisse Lene Hain (${formatCurrency(totalReceivables)})`}
+        title={`Receivables Breakdown - Kisse Lene Hain (${formatCurrency(totalReceivables)})`}
         maxWidth="lg"
       >
         <div className="space-y-4">
@@ -284,7 +284,7 @@ export const LedgerView = () => {
                     <h5 className="font-bold text-slate-100 text-sm">{cust.name}</h5>
                     <span className="text-[10px] font-mono text-slate-400">{cust.phone}</span>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Total Bills: {cust.totalBills} â€¢ Total Spent: {formatCurrency(cust.totalSpent)}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Total Bills: {cust.totalBills} • Total Spent: {formatCurrency(cust.totalSpent)}</p>
                 </div>
                 <div className="text-right flex items-center gap-3">
                   <div>
@@ -313,7 +313,7 @@ export const LedgerView = () => {
       <Modal
         isOpen={showPayablesModal}
         onClose={() => setShowPayablesModal(false)}
-        title={`ðŸ“¤ Payables Breakdown - Kisko Dene Hain (${formatCurrency(totalPayables)})`}
+        title={`Payables Breakdown - Kisko Dene Hain (${formatCurrency(totalPayables)})`}
         maxWidth="lg"
       >
         <div className="space-y-4">
@@ -333,7 +333,7 @@ export const LedgerView = () => {
                 <div>
                   <h5 className="font-bold text-slate-100 text-sm hover:text-gold-400 transition-colors">{item.partyName}</h5>
                   <p className="text-[10px] text-slate-400 mt-0.5">
-                    Ref: <span className="font-mono text-gold-400 font-bold">{item.referenceNo}</span> â€¢ {item.description}
+                    Ref: <span className="font-mono text-gold-400 font-bold">{item.referenceNo}</span> • {item.description}
                   </p>
                 </div>
                 <div className="text-right flex items-center gap-3">
@@ -355,7 +355,7 @@ export const LedgerView = () => {
       <Modal
         isOpen={showNetModal}
         onClose={() => setShowNetModal(false)}
-        title={`âš–ï¸ Net Khata Balance Statement (${formatCurrency(netBalance)})`}
+        title={`Net Khata Balance Statement (${formatCurrency(netBalance)})`}
         maxWidth="lg"
       >
         <div className="space-y-4">
@@ -433,7 +433,7 @@ export const LedgerView = () => {
               { label: "DEBIT (Charge / New Credit Purchase)", value: "DEBIT" },
             ]}
           />
-          <Input label="Amount (â‚¹) *" type="number" value={amount || ""} onChange={(e) => setAmount(Number(e.target.value))} required />
+          <Input label="Amount (₹) *" type="number" value={amount || ""} onChange={(e) => setAmount(Number(e.target.value))} required />
           <Input label="Description / Remarks" value={description} onChange={(e) => setDescription(e.target.value)} />
 
           <div className="flex gap-2 pt-2">

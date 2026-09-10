@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { useProductStore } from "@/store/product-store";
@@ -60,7 +60,7 @@ export const ProductsView = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="ðŸ“¦ Product Inventory"
+        title="Product Inventory"
         subtitle={`Managing ${products.length} luxury items & stock thresholds`}
         action={
           <Button variant="gold" onClick={() => setShowAddModal(true)} icon={<Plus className="w-4 h-4" />}>
@@ -147,8 +147,8 @@ export const ProductsView = () => {
             <Input label="SKU / Model #" value={sku} onChange={(e) => setSku(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Selling Price (â‚¹) *" type="number" value={price || ""} onChange={(e) => setPrice(Number(e.target.value))} required />
-            <Input label="Cost Price (â‚¹)" type="number" value={costPrice || ""} onChange={(e) => setCostPrice(Number(e.target.value))} />
+            <Input label="Selling Price (₹) *" type="number" value={price || ""} onChange={(e) => setPrice(Number(e.target.value))} required />
+            <Input label="Cost Price (₹)" type="number" value={costPrice || ""} onChange={(e) => setCostPrice(Number(e.target.value))} />
           </div>
           <div className="grid grid-cols-3 gap-2">
             <Input label="Stock *" type="number" value={stock} onChange={(e) => setStock(Number(e.target.value))} />

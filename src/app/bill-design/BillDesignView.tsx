@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { useSettingsStore } from "@/store/settings-store";
@@ -61,17 +61,16 @@ const MOCK_SAMPLE_BILL: Bill = {
   ],
   calculation: {
     subtotal: 4800,
-    orderDiscountAmount: 0,
+    itemDiscounts: 0,
+    orderDiscount: 0,
     taxableAmount: 4800,
     cgst: 216,
     sgst: 216,
     igst: 0,
     totalTax: 432,
-    roundOff: 0,
     grandTotal: 5232,
     paidAmount: 5232,
     dueAmount: 0,
-    changeAmount: 0,
   },
   paymentMethod: "UPI",
   paymentStatus: "PAID",
@@ -147,7 +146,7 @@ export const BillDesignView = () => {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="ðŸ§¾ Bill Design Studio"
+        title="Bill Design Studio"
         subtitle="Live Template Customizer, Accent Colors & Thermal POS Receipts"
         action={
           <div className="flex gap-2">
@@ -287,7 +286,7 @@ export const BillDesignView = () => {
                 }`}
                 title="Fit full invoice width inside view"
               >
-                ðŸ“± Fit Screen
+                Fit Screen
               </button>
               <button
                 type="button"
@@ -344,7 +343,7 @@ export const BillDesignView = () => {
           </div>
 
           <div className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-2">
-            <span>âœ¨ Real-time Preview: Jo template yahan select karenge, wahi bill download & print par aayega.</span>
+            <span>Real-time Preview: Jo template yahan select karenge, wahi bill download & print par aayega.</span>
           </div>
         </div>
       </div>

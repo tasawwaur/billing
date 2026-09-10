@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { useBillingStore } from "@/store/billing-store";
@@ -30,7 +30,7 @@ export const ReportsView = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="ðŸ“Š Financial & GST Analytics Reports"
+        title="Financial & GST Analytics Reports"
         subtitle="Revenue summaries, Profit & Loss breakdowns, and Tax export"
         action={
           <Button variant="gold" size="sm" onClick={() => window.print()} icon={<Printer className="w-4 h-4" />}>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { useSettingsStore, PERMANENT_PROFILE } from "@/store/settings-store";
@@ -107,7 +107,7 @@ export const SettingsView = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="âš™ï¸ Store & Application Settings"
+        title="Store & Application Settings"
         subtitle="Business Identity, GSTIN, Backup Management & System Configuration"
         action={
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold shadow-sm">
@@ -301,7 +301,7 @@ export const SettingsView = () => {
               </Button>
               <label className="block w-full cursor-pointer group">
                 <div className="w-full py-2.5 px-4 text-xs font-bold rounded-xl bg-gradient-to-r from-gold-500/20 via-amber-500/20 to-gold-500/20 border border-gold-500/40 text-gold-300 hover:text-gold-200 hover:border-gold-400 text-center flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95">
-                  <Upload className="w-4 h-4 text-gold-400 group-hover:scale-110 transition-transform" /> ðŸ”„ Restore JSON Backup
+                  <Upload className="w-4 h-4 text-gold-400 group-hover:scale-110 transition-transform" /> Restore JSON Backup
                 </div>
                 <input type="file" accept=".json" onChange={handleImportBackup} className="hidden" />
               </label>
@@ -323,7 +323,7 @@ export const SettingsView = () => {
               className="w-full text-xs font-bold shadow-md hover:bg-rose-600 active:scale-95"
               icon={<RotateCcw className="w-4 h-4" />}
             >
-              ðŸ”„ Restore Clean Store Data
+              Restore Clean Store Data
             </Button>
           </div>
         </div>
