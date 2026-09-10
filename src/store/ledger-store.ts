@@ -8,7 +8,7 @@ interface LedgerStore {
   ledger: LedgerEntry[];
   payments: PaymentRecord[];
   addLedgerEntry: (entry: Omit<LedgerEntry, "id" | "date">) => void;
-  addPaymentRecord: (payment: Omit<PaymentRecord, "id" | "date" | "status" | "createdAt"> & { status?: PaymentRecord["status"] }) => void;
+  addPaymentRecord: (payment: Omit<PaymentRecord, "id" | "date" | "status" | "createdAt"> & { status?: PaymentRecord["status"]; id?: string }) => void;
   updatePendingDueRecord: (invoiceNo: string, newDueAmount: number) => void;
   reversePaymentRecord: (paymentId: string) => PaymentRecord | null;
   clearPayments: () => void;
