@@ -43,12 +43,17 @@ export const BillTemplateLuxuryGold: React.FC<BillTemplateProps> = ({ bill, sett
           </div>
         </div>
         <div className="text-right">
-          <span className="inline-block bg-[#0b0f17] text-[#d4af37] text-[11px] font-bold px-2.5 py-0.5 rounded uppercase tracking-wider mb-1">
-            TAX INVOICE
+          <span className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded uppercase tracking-wider mb-1 ${
+            bill.isReturn ? "bg-rose-900 text-rose-200" : "bg-[#0b0f17] text-[#d4af37]"
+          }`}>
+            {bill.isReturn ? "SALES RETURN CREDIT NOTE" : "TAX INVOICE"}
           </span>
           <h2 className="text-lg font-bold text-slate-900 font-mono">{bill.invoiceNo}</h2>
+          {bill.parentInvoiceNo && (
+            <p className="text-[11px] font-bold text-rose-700 font-mono">Original Ref: {bill.parentInvoiceNo}</p>
+          )}
           <p className="text-[11px] text-slate-500 mt-0.5">Date: {formatDate(bill.date)}</p>
-          <p className="text-[11px] font-semibold text-slate-700">Mode: {bill.paymentMethod}</p>
+          <p className="text-[11px] font-semibold text-slate-700">Mode: {bill.isReturn ? `Return (${bill.returnAdjustmentMode || "ADJUST_DUE"})` : bill.paymentMethod}</p>
         </div>
       </div>
 

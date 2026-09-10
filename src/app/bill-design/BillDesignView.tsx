@@ -83,7 +83,7 @@ export const BillDesignView = () => {
   const { bills } = useBillingStore();
 
   const [mounted, setMounted] = useState(false);
-  const [activeTemplate, setActiveTemplate] = useState<BillTemplateId>("retail_premium");
+  const [activeTemplate, setActiveTemplate] = useState<BillTemplateId>("thermal80");
   const [accentColor, setAccentColor] = useState("#d4af37");
   const [showGst, setShowGst] = useState(true);
   const [showQr, setShowQr] = useState(true);
@@ -124,11 +124,11 @@ export const BillDesignView = () => {
 
   const templates: { id: BillTemplateId; name: string; desc: string; badge?: string }[] = [
     { id: "retail_premium", name: "Retail Emerald", desc: "Vibrant emerald header block & receipt layout", badge: "Popular" },
-    { id: "luxury_gold", name: "Luxury Gold", desc: "Premium Gold border, royal serif headings & QR", badge: "Default" },
+    { id: "luxury_gold", name: "Luxury Gold", desc: "Premium Gold border, royal serif headings & QR" },
     { id: "modern_white", name: "Modern White", desc: "Sleek corporate layout with clean lines" },
     { id: "classic_retail", name: "Classic Formal", desc: "Traditional double-line GST invoice" },
     { id: "luxury_black", name: "Obsidian Black", desc: "Dark luxury theme with gold highlights" },
-    { id: "thermal80", name: "80mm POS Receipt", desc: "Standard 3-inch POS thermal receipt" },
+    { id: "thermal80", name: "80mm POS Receipt", desc: "Standard 3-inch POS thermal receipt", badge: "Default" },
     { id: "thermal58", name: "58mm Mini Receipt", desc: "Compact 2-inch mini thermal receipt" },
   ];
 

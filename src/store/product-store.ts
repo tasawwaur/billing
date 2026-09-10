@@ -9,6 +9,7 @@ interface ProductStore {
   updateProduct: (id: string, updated: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   reduceStock: (items: { productId: string; quantity: number }[]) => void;
+  restockStock: (items: { productId: string; quantity: number }[]) => void;
   importBackupProducts: (newProducts: Product[]) => void;
   resetProducts: () => void;
 }
@@ -67,6 +68,18 @@ export const useProductStore = create<ProductStore>((set) => ({
         const item = items.find((i) => i.productId === p.id);
         if (item) {
           return { ...p, stock: Math.max(0, p.stock - item.quantity) };
+        }
+        return p;
+      });
+      setStorageItem("rajdhani_products", updated);
+      return { products: updated };
+    }),
+  restockStock: (items) =>
+    set((state) => {
+      const updated = state.products.map((p) => {
+        const item = items.find((i) => i.productId === p.id || i.productId === p.sku);
+        if (item) {
+          return { ...p, stock: p.stock + item.quantity };
         }
         return p;
       });

@@ -30,7 +30,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   defaultTaxRate: 9,
   upiId: "",
   logoUrl: "/logo/store-logo.png",
-  activeTemplate: "luxury_gold",
+  activeTemplate: "thermal80",
   accentColor: "#d4af37",
   showGstOnBill: true,
   showQrOnBill: false,
@@ -44,21 +44,29 @@ interface SettingsStore {
   resetSettings: () => void;
 }
 
-export const useSettingsStore = create<SettingsStore>((set) => ({
-  settings: {
-    ...DEFAULT_SETTINGS,
-    ...getStorageItem<StoreSettings>("rajdhani_settings", DEFAULT_SETTINGS),
-    ...PERMANENT_PROFILE,
-  },
-  updateSettings: (newSettings) =>
-    set((state) => {
-      // Enforce that business profile cannot be modified (permanently locked)
-      const updated = { ...state.settings, ...newSettings, ...PERMANENT_PROFILE };
-      setStorageItem("rajdhani_settings", updated);
-      return { settings: updated };
-    }),
-  resetSettings: () => {
-    setStorageItem("rajdhani_settings", DEFAULT_SETTINGS);
-    set({ settings: DEFAULT_SETTINGS });
-  },
-}));
+export const useSettingsStore = create<SettingsStore>((set) => {
+  const stored = getStorageItem<StoreSettings>("rajdhani_settings", DEFAULT_SETTINGS);
+  const activeTemplate = (stored && stored.activeTemplate && stored.activeTemplate !== "luxury_gold")
+    ? stored.activeTemplate
+    : "thermal80";
+
+  return {
+    settings: {
+      ...DEFAULT_SETTINGS,
+      ...stored,
+      activeTemplate,
+      ...PERMANENT_PROFILE,
+    },
+    updateSettings: (newSettings) =>
+      set((state) => {
+        // Enforce that business profile cannot be modified (permanently locked)
+        const updated = { ...state.settings, ...newSettings, ...PERMANENT_PROFILE };
+        setStorageItem("rajdhani_settings", updated);
+        return { settings: updated };
+      }),
+    resetSettings: () => {
+      setStorageItem("rajdhani_settings", DEFAULT_SETTINGS);
+      set({ settings: DEFAULT_SETTINGS });
+    },
+  };
+});

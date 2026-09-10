@@ -20,7 +20,7 @@ export const BillTemplateA4: React.FC<BillTemplateA4Props> = ({
   settings,
   templateOverride,
 }) => {
-  const activeTemplate = templateOverride || bill.templateId || settings.activeTemplate || "luxury_gold";
+  const activeTemplate = templateOverride || bill.templateId || settings.activeTemplate || "thermal80";
 
   switch (activeTemplate) {
     case "luxury_black":

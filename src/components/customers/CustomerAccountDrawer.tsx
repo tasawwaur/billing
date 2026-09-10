@@ -14,6 +14,7 @@ import { Table, TableHeader, TableBody, TableRow, TableCell } from "@/components
 import { Badge } from "@/components/ui/Badge";
 import { BillTemplateA4 } from "@/components/bills/BillTemplateA4";
 import { BillActionToolbar } from "@/components/bills/BillActionToolbar";
+import { SalesReturnModal } from "@/components/bills/SalesReturnModal";
 import { normalizeIndianMobile, sendInvoiceWhatsApp } from "@/lib/whatsapp";
 import { formatCurrency, formatDate, formatTime } from "@/lib/currency";
 import { Bill } from "@/types/bill";
@@ -31,7 +32,8 @@ import {
   ArrowUpRight,
   Eye,
   MessageCircle,
-  Image as ImageIcon,
+  ImageIcon,
+  Undo2,
 } from "lucide-react";
 import { downloadInvoiceAsImage } from "@/lib/image-export";
 
@@ -55,6 +57,7 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
   const [activeTab, setActiveTab] = useState<"purchases" | "payments" | "ledger">("purchases");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedBillForPreview, setSelectedBillForPreview] = useState<Bill | null>(null);
+  const [billToReturn, setBillToReturn] = useState<Bill | null>(null);
 
   // Payment Form State
   const [payType, setPayType] = useState<"RECEIVE_LENA" | "PAY_DENA">("RECEIVE_LENA");
@@ -279,15 +282,26 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
                       <TableCell>
                         <Badge variant={b.paymentStatus === "PAID" ? "paid" : "due"}>{b.paymentStatus}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right space-x-1">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setSelectedBillForPreview(b)}
                           icon={<Eye className="w-3.5 h-3.5" />}
                         >
-                          View Bill
+                          View
                         </Button>
+                        {!b.isReturn && b.paymentStatus !== "CANCELLED" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setBillToReturn(b)}
+                            icon={<Undo2 className="w-3.5 h-3.5 text-amber-400" />}
+                            title="Item Return / Sales Return (वापसी)"
+                          >
+                            Return
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -509,16 +523,44 @@ export const CustomerAccountDrawer: React.FC<CustomerAccountDrawerProps> = ({
         <Modal
           isOpen={!!selectedBillForPreview}
           onClose={() => setSelectedBillForPreview(null)}
-          title={`Invoice ${selectedBillForPreview.invoiceNo}`}
+          title={`${selectedBillForPreview.isReturn ? "Sales Return Credit Note" : "Invoice"} ${selectedBillForPreview.invoiceNo}`}
           maxWidth="2xl"
         >
           <div className="space-y-4">
-            <BillActionToolbar bill={selectedBillForPreview} settings={settings} />
+            <div className="flex justify-between items-center bg-obsidian-900 p-2.5 rounded-xl border border-gold-500/20">
+              <BillActionToolbar bill={selectedBillForPreview} settings={settings} />
+              {!selectedBillForPreview.isReturn && selectedBillForPreview.paymentStatus !== "CANCELLED" && (
+                <Button
+                  variant="gold"
+                  size="sm"
+                  onClick={() => {
+                    const b = selectedBillForPreview;
+                    setSelectedBillForPreview(null);
+                    setBillToReturn(b);
+                  }}
+                  icon={<Undo2 className="w-4 h-4" />}
+                >
+                  Return Item
+                </Button>
+              )}
+            </div>
             <div className="max-h-[65vh] overflow-y-auto overflow-x-auto rounded-xl border border-slate-200">
               <BillTemplateA4 bill={selectedBillForPreview} settings={settings} />
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Sales Return Modal */}
+      {billToReturn && (
+        <SalesReturnModal
+          bill={billToReturn}
+          isOpen={!!billToReturn}
+          onClose={() => setBillToReturn(null)}
+          onReturnGenerated={(retBill) => {
+            setSelectedBillForPreview(retBill);
+          }}
+        />
       )}
     </div>
   );

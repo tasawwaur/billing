@@ -9,6 +9,7 @@ interface LedgerStore {
   payments: PaymentRecord[];
   addLedgerEntry: (entry: Omit<LedgerEntry, "id" | "date">) => void;
   addPaymentRecord: (payment: Omit<PaymentRecord, "id" | "date" | "status" | "createdAt"> & { status?: PaymentRecord["status"] }) => void;
+  updatePendingDueRecord: (invoiceNo: string, newDueAmount: number) => void;
   reversePaymentRecord: (paymentId: string) => PaymentRecord | null;
   clearPayments: () => void;
   importBackupLedger: (newLedger: LedgerEntry[], newPayments?: PaymentRecord[]) => void;
@@ -19,10 +20,31 @@ const getInitialPayments = (): PaymentRecord[] => {
   const stored = getStorageItem<PaymentRecord[]>("rajdhani_payments", INITIAL_PAYMENTS);
   if (Array.isArray(stored)) {
     const cleaned = stored.filter((p) => !["pay-1", "pay-2", "pay-3", "pay-4", "pay-5"].includes(p.id));
-    if (cleaned.length !== stored.length) {
-      setStorageItem("rajdhani_payments", cleaned);
+    const unique: PaymentRecord[] = [];
+    const seenRefs = new Set<string>();
+    const seenIds = new Set<string>();
+
+    for (const p of cleaned) {
+      if (
+        p.referenceNo &&
+        (p.referenceNo.startsWith("POS-") || p.referenceNo.startsWith("DUE-") || p.referenceNo.startsWith("REC-"))
+      ) {
+        const key = `${p.invoiceNo}_${p.referenceNo}`;
+        if (seenRefs.has(key)) continue;
+        seenRefs.add(key);
+      }
+      let pId = p.id;
+      if (seenIds.has(pId)) {
+        pId = `${pId}-${Math.random().toString(36).substring(2, 6)}`;
+      }
+      seenIds.add(pId);
+      unique.push({ ...p, id: pId });
     }
-    return cleaned;
+
+    if (unique.length !== stored.length) {
+      setStorageItem("rajdhani_payments", unique);
+    }
+    return unique;
   }
   return [];
 };
@@ -46,7 +68,7 @@ export const useLedgerStore = create<LedgerStore>((set, get) => ({
     set((state) => {
       const newEntry: LedgerEntry = {
         ...entry,
-        id: `led-${Date.now()}`,
+        id: `led-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         date: new Date().toISOString(),
       };
       const updated = [newEntry, ...state.ledger];
@@ -56,14 +78,59 @@ export const useLedgerStore = create<LedgerStore>((set, get) => ({
   addPaymentRecord: (payment) =>
     set((state) => {
       const nowStr = new Date().toISOString();
+      let updated = [...state.payments];
+
+      if (
+        payment.referenceNo &&
+        (payment.referenceNo.startsWith("POS-") || payment.referenceNo.startsWith("DUE-") || payment.referenceNo.startsWith("REC-"))
+      ) {
+        const existingIndex = updated.findIndex(
+          (p) => p.invoiceNo === payment.invoiceNo && p.referenceNo === payment.referenceNo
+        );
+        if (existingIndex !== -1) {
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            ...payment,
+            amount: payment.amount,
+            status: payment.status || updated[existingIndex].status || "COMPLETED",
+          };
+          setStorageItem("rajdhani_payments", updated);
+          return { payments: updated };
+        }
+      }
+
+      const uniqueSuffix = Math.random().toString(36).substring(2, 7);
       const newPayment: PaymentRecord = {
         ...payment,
-        id: `pay-${Date.now()}`,
+        id: payment.id || `pay-${Date.now()}-${uniqueSuffix}`,
         date: nowStr,
         status: payment.status || "COMPLETED",
         createdAt: nowStr,
       };
-      const updated = [newPayment, ...state.payments];
+      updated = [newPayment, ...updated];
+      setStorageItem("rajdhani_payments", updated);
+      return { payments: updated };
+    }),
+  updatePendingDueRecord: (invoiceNo, newDueAmount) =>
+    set((state) => {
+      let updated = [...state.payments];
+      const pendingIdx = updated.findIndex(
+        (p) => p.invoiceNo === invoiceNo && p.status === "PENDING"
+      );
+
+      if (newDueAmount <= 0) {
+        if (pendingIdx !== -1) {
+          updated = updated.filter((_, idx) => idx !== pendingIdx);
+        }
+      } else {
+        if (pendingIdx !== -1) {
+          updated[pendingIdx] = {
+            ...updated[pendingIdx],
+            amount: newDueAmount,
+          };
+        }
+      }
+
       setStorageItem("rajdhani_payments", updated);
       return { payments: updated };
     }),

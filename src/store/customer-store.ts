@@ -12,6 +12,7 @@ interface CustomerStore {
   recordDenaPayment: (customerId: string, paidAmount: number) => void;
   recordAddDena: (customerId: string, amount: number) => void;
   recordAddDue: (customerId: string, amount: number) => void;
+  recordSalesReturn: (customerId: string, returnAmount: number, adjustDuesAmount: number, storeCreditAmount: number) => void;
   importBackupCustomers: (newCustomers: Customer[]) => void;
   clearCustomers: () => void;
   resetCustomers: () => void;
@@ -120,6 +121,22 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
           return {
             ...c,
             dueBalance: c.dueBalance + amount,
+          };
+        }
+        return c;
+      });
+      setStorageItem("rajdhani_customers", updated);
+      return { customers: updated };
+    }),
+  recordSalesReturn: (customerId, returnAmount, adjustDuesAmount, storeCreditAmount) =>
+    set((state) => {
+      const updated = state.customers.map((c) => {
+        if (c.id === customerId) {
+          return {
+            ...c,
+            totalSpent: Math.max(0, c.totalSpent - returnAmount),
+            dueBalance: Math.max(0, c.dueBalance - adjustDuesAmount),
+            denaBalance: (c.denaBalance || 0) + storeCreditAmount,
           };
         }
         return c;

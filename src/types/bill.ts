@@ -42,6 +42,11 @@ export interface BillCalculation {
 export interface Bill {
   id: string;
   invoiceNo: string;
+  isReturn?: boolean;
+  parentInvoiceNo?: string;
+  returnReason?: string;
+  returnAdjustmentMode?: 'ADJUST_DUE' | 'CASH_REFUND' | 'STORE_CREDIT';
+  originalGrandTotal?: number;
   customerId: string;
   customerName: string;
   customerPhone: string;

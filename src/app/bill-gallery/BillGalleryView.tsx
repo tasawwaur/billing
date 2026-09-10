@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { BillTemplateA4 } from "@/components/bills/BillTemplateA4";
 import { BillActionToolbar } from "@/components/bills/BillActionToolbar";
+import { SalesReturnModal } from "@/components/bills/SalesReturnModal";
 import { CustomerAccountDrawer } from "@/components/customers/CustomerAccountDrawer";
 import { sendInvoiceWhatsApp } from "@/lib/whatsapp";
 import { formatCurrency, formatDate } from "@/lib/currency";
@@ -25,6 +26,7 @@ import {
   XCircle,
   ChevronLeft,
   ChevronRight,
+  Undo2,
 } from "lucide-react";
 
 const PAGE_SIZE = 25;
@@ -43,6 +45,7 @@ export const BillGalleryView: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [billToCancel, setBillToCancel] = useState<Bill | null>(null);
+  const [billToReturn, setBillToReturn] = useState<Bill | null>(null);
   const [selectedCustForAccount, setSelectedCustForAccount] = useState<Customer | null>(null);
 
   const dates = useMemo(() => {
@@ -304,6 +307,17 @@ export const BillGalleryView: React.FC = () => {
                   >
                     View
                   </Button>
+                  {!bill.isReturn && bill.paymentStatus !== "CANCELLED" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setBillToReturn(bill)}
+                      icon={<Undo2 className="w-3.5 h-3.5 text-amber-400" />}
+                      title="Item Return / Sales Return (वापसी)"
+                    >
+                      Return
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -312,7 +326,7 @@ export const BillGalleryView: React.FC = () => {
                   >
                     WhatsApp
                   </Button>
-                  {bill.paymentStatus !== "CANCELLED" && (
+                  {!bill.isReturn && bill.paymentStatus !== "CANCELLED" && (
                     <button
                       onClick={() => setBillToCancel(bill)}
                       title="Cancel Invoice & Reverse Stock"
@@ -363,11 +377,27 @@ export const BillGalleryView: React.FC = () => {
         <Modal
           isOpen={!!selectedBill}
           onClose={() => setSelectedBill(null)}
-          title={`Tax Invoice - ${selectedBill.invoiceNo}`}
+          title={`${selectedBill.isReturn ? "Sales Return Credit Note" : "Tax Invoice"} - ${selectedBill.invoiceNo}`}
           maxWidth="2xl"
         >
           <div className="space-y-4">
-            <BillActionToolbar bill={selectedBill} settings={settings} />
+            <div className="flex justify-between items-center bg-obsidian-900 p-2.5 rounded-xl border border-gold-500/20">
+              <BillActionToolbar bill={selectedBill} settings={settings} />
+              {!selectedBill.isReturn && selectedBill.paymentStatus !== "CANCELLED" && (
+                <Button
+                  variant="gold"
+                  size="sm"
+                  onClick={() => {
+                    const b = selectedBill;
+                    setSelectedBill(null);
+                    setBillToReturn(b);
+                  }}
+                  icon={<Undo2 className="w-4 h-4" />}
+                >
+                  Create Sales Return / Item Wapas
+                </Button>
+              )}
+            </div>
             <div className="max-h-[65vh] overflow-y-auto rounded-xl border border-slate-200">
               <BillTemplateA4 bill={selectedBill} settings={settings} />
             </div>
@@ -391,6 +421,18 @@ export const BillGalleryView: React.FC = () => {
           customer={selectedCustForAccount}
           isOpen={!!selectedCustForAccount}
           onClose={() => setSelectedCustForAccount(null)}
+        />
+      )}
+
+      {/* Sales Return Modal */}
+      {billToReturn && (
+        <SalesReturnModal
+          bill={billToReturn}
+          isOpen={!!billToReturn}
+          onClose={() => setBillToReturn(null)}
+          onReturnGenerated={(retBill) => {
+            setSelectedBill(retBill);
+          }}
         />
       )}
     </div>

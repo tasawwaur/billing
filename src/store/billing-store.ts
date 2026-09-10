@@ -35,6 +35,16 @@ interface BillingStore {
   
   // Create & Manage Invoice
   saveCurrentBill: (templateId?: BillTemplateId) => Bill | null;
+  createReturnBill: (params: {
+    originalBill: Bill;
+    returnedItems: BillItem[];
+    adjustmentMode: 'ADJUST_DUE' | 'CASH_REFUND' | 'STORE_CREDIT';
+    returnReason: string;
+    returnTotal: number;
+    adjustDuesAmount: number;
+    cashRefundAmount: number;
+    storeCreditAmount: number;
+  }) => Bill | null;
   cancelBill: (billId: string) => Bill | null;
   recordBillPayment: (invoiceNo: string, amount: number) => void;
   importBackupBills: (newBills: Bill[]) => void;
@@ -228,7 +238,7 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
   setPaymentMethod: (method) => set({ paymentMethod: method }),
   setPaidAmountInput: (amount) => set({ paidAmountInput: amount }),
 
-  saveCurrentBill: (templateId = "luxury_gold") => {
+  saveCurrentBill: (templateId = "thermal80") => {
     const { cart, selectedCustomerId, selectedCustomerName, selectedCustomerPhone, orderDiscountPercent, paymentMethod, paidAmountInput, bills } = get();
     if (cart.length === 0) return null;
 
@@ -279,6 +289,88 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
       selectedCustomerPhone: "",
     });
     return newBill;
+  },
+
+  createReturnBill: ({
+    originalBill,
+    returnedItems,
+    adjustmentMode,
+    returnReason,
+    returnTotal,
+    adjustDuesAmount,
+    cashRefundAmount,
+    storeCreditAmount,
+  }) => {
+    const { bills } = get();
+    if (!returnedItems || returnedItems.length === 0) return null;
+
+    const returnCount = bills.filter((b) => b.isReturn).length + 1;
+    const retInvNo = `RET-2026${String(returnCount).padStart(5, "0")}`;
+    const nowStr = new Date().toISOString();
+
+    let totalSubtotal = 0;
+    let totalTax = 0;
+    for (const item of returnedItems) {
+      totalSubtotal += item.price * item.quantity;
+      totalTax += item.taxAmount;
+    }
+
+    const returnBill: Bill = {
+      id: `ret-${Date.now()}`,
+      invoiceNo: retInvNo,
+      isReturn: true,
+      parentInvoiceNo: originalBill.invoiceNo,
+      returnReason: returnReason || "Customer Item Return / Exchange",
+      returnAdjustmentMode: adjustmentMode,
+      originalGrandTotal: originalBill.calculation.grandTotal,
+      customerId: originalBill.customerId,
+      customerName: originalBill.customerName,
+      customerPhone: originalBill.customerPhone,
+      customerGstin: originalBill.customerGstin,
+      date: nowStr,
+      items: returnedItems,
+      calculation: {
+        subtotal: totalSubtotal,
+        itemDiscounts: 0,
+        orderDiscount: 0,
+        taxableAmount: totalSubtotal,
+        cgst: Math.round((totalTax / 2) * 100) / 100,
+        sgst: Math.round((totalTax / 2) * 100) / 100,
+        igst: 0,
+        totalTax: Math.round(totalTax * 100) / 100,
+        grandTotal: returnTotal,
+        paidAmount: cashRefundAmount,
+        dueAmount: 0,
+      },
+      paymentMethod: adjustmentMode === "CASH_REFUND" ? "CASH" : "CREDIT",
+      paymentStatus: "PAID",
+      templateId: originalBill.templateId || "thermal80",
+      notes: `Sales Return Credit Note for ${originalBill.invoiceNo}. Reason: ${returnReason || "Item Return"}`,
+      createdAt: nowStr,
+    };
+
+    // If dues were adjusted on original bill, update original bill's due amount
+    const updatedBills = bills.map((b) => {
+      if (b.invoiceNo === originalBill.invoiceNo && adjustDuesAmount > 0) {
+        const currentDue = b.calculation.dueAmount || 0;
+        const newDue = Math.max(0, currentDue - adjustDuesAmount);
+        const newStatus: "PAID" | "PARTIAL" | "DUE" = newDue <= 0 ? "PAID" : "PARTIAL";
+        return {
+          ...b,
+          paymentStatus: newStatus,
+          calculation: {
+            ...b.calculation,
+            dueAmount: newDue,
+          },
+        };
+      }
+      return b;
+    });
+
+    const finalBills = [returnBill, ...updatedBills];
+    setStorageItem("rajdhani_bills", finalBills);
+    set({ bills: finalBills });
+    return returnBill;
   },
 
   cancelBill: (billId) => {

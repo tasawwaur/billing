@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 
 export const PaymentsView = () => {
-  const { payments, addPaymentRecord, addLedgerEntry, clearPayments } = useLedgerStore();
+  const { payments, addPaymentRecord, updatePendingDueRecord, addLedgerEntry, clearPayments } = useLedgerStore();
   const { bills, recordBillPayment } = useBillingStore();
   const { customers, recordPayment } = useCustomerStore();
   const { settings } = useSettingsStore();
@@ -77,24 +77,46 @@ export const PaymentsView = () => {
     return customers.reduce((sum, c) => sum + (c.dueBalance || 0), 0);
   }, [customers]);
 
-  // Combine recorded payments with any unpaid bill dues that aren't yet in payments
+  // Combine recorded payments with live unpaid bill dues (ensuring no duplicates or stale PENDING rows)
   const allPaymentRecords = useMemo(() => {
-    const list: PaymentRecord[] = [...payments];
+    const list: PaymentRecord[] = [];
+    const pendingInvoices = new Set<string>();
 
-    // For any bill with dueAmount > 0 that doesn't already have a completed payment record covering it
+    // 1. Include non-PENDING payments, and filter/sync PENDING payments to live bill dues
+    payments.forEach((p) => {
+      if (p.status === "PENDING") {
+        const matchedBill = bills.find((b) => b.invoiceNo === p.invoiceNo);
+        if (matchedBill) {
+          if (
+            matchedBill.paymentStatus === "CANCELLED" ||
+            matchedBill.paymentStatus === "PAID" ||
+            (matchedBill.calculation?.dueAmount || 0) <= 0
+          ) {
+            return;
+          }
+          list.push({
+            ...p,
+            amount: matchedBill.calculation.dueAmount,
+          });
+          pendingInvoices.add(p.invoiceNo);
+        } else if (p.amount > 0) {
+          list.push(p);
+          pendingInvoices.add(p.invoiceNo);
+        }
+      } else {
+        list.push(p);
+      }
+    });
+
+    // 2. Add synthetic pending records for any bill with dueAmount > 0 not already in list
     bills.forEach((b) => {
-      if (b.calculation && b.calculation.dueAmount > 0 && b.paymentStatus !== "CANCELLED") {
-        const collectedForBill = payments
-          .filter((p) => p.invoiceNo === b.invoiceNo && p.status === "COMPLETED")
-          .reduce((sum, p) => sum + p.amount, 0);
-
-        const netDue = Math.max(0, b.calculation.dueAmount - collectedForBill);
-
-        const hasExistingPending = list.some(
-          (p) => p.invoiceNo === b.invoiceNo && p.status === "PENDING"
-        );
-
-        if (netDue > 0 && !hasExistingPending) {
+      if (
+        b.calculation &&
+        b.calculation.dueAmount > 0 &&
+        b.paymentStatus !== "CANCELLED" &&
+        b.paymentStatus !== "PAID"
+      ) {
+        if (!pendingInvoices.has(b.invoiceNo)) {
           list.push({
             id: `due-bill-${b.id}`,
             billId: b.id,
@@ -102,19 +124,34 @@ export const PaymentsView = () => {
             customerId: b.customerId,
             customerName: b.customerName,
             customerPhone: b.customerPhone,
-            amount: netDue,
+            amount: b.calculation.dueAmount,
             method: (b.paymentMethod === "CREDIT" ? "CASH" : b.paymentMethod) as any,
             referenceNo: `DUE-${b.invoiceNo}`,
             date: b.date || b.createdAt,
             status: "PENDING",
-            notes: `Pending Due (à¤‰à¤§à¤¾à¤°à¥€) - ${b.invoiceNo}`,
+            notes: `Pending Due (उधारी) - ${b.invoiceNo}`,
             createdAt: b.createdAt,
           });
+          pendingInvoices.add(b.invoiceNo);
         }
       }
     });
 
-    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // 3. Strict deduplication by invoiceNo + referenceNo
+    const uniqueList: PaymentRecord[] = [];
+    const seenKeys = new Set<string>();
+
+    list.forEach((p) => {
+      const key = p.referenceNo
+        ? `${p.invoiceNo}_${p.referenceNo}`
+        : `${p.invoiceNo}_${p.id}`;
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        uniqueList.push(p);
+      }
+    });
+
+    return uniqueList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [payments, bills]);
 
   // 1. Dynamic KPI Summary Cards
@@ -259,9 +296,18 @@ export const PaymentsView = () => {
 
     const refStr = payRef || `REC-${Date.now().toString().slice(-6)}`;
 
-    // If an invoice is linked, update its payment status
+    // If an invoice is linked, update its payment status and pending due record
     if (payInvoiceNo) {
       recordBillPayment(payInvoiceNo, payAmount);
+
+      const matchedBill = bills.find((b) => b.invoiceNo === payInvoiceNo);
+      if (matchedBill) {
+        const currentDue = matchedBill.calculation?.dueAmount || 0;
+        const newDueAmount = Math.max(0, currentDue - payAmount);
+        updatePendingDueRecord(payInvoiceNo, newDueAmount);
+      } else {
+        updatePendingDueRecord(payInvoiceNo, 0);
+      }
     }
 
     addLedgerEntry({
@@ -320,19 +366,6 @@ export const PaymentsView = () => {
         subtitle="Live payment stream, cash audit log, due collection & instant customer reconciliation"
         action={
           <div className="flex gap-2">
-            {payments.length > 0 && (
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => {
-                  if (confirm("Kya aap sabhi purani/placeholder payments delete karna chahte hain?")) {
-                    clearPayments();
-                  }
-                }}
-              >
-                Clear All Payments
-              </Button>
-            )}
             <Button variant="outline" size="sm" onClick={handleExportCSV} icon={<Download className="w-4 h-4" />}>
               Export CSV
             </Button>
@@ -344,7 +377,7 @@ export const PaymentsView = () => {
       />
 
       {/* 1. Dynamic KPI Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
         <div className="glass-panel p-3.5 rounded-xl border border-gold-500/20 bg-gold-500/5">
           <span className="text-[9px] font-extrabold uppercase tracking-wider text-gold-400 block">Today Received</span>
           <span className="text-base font-extrabold text-slate-100 mt-1 block">{formatCurrency(kpis.todayReceived)}</span>
@@ -368,7 +401,7 @@ export const PaymentsView = () => {
         <div className="glass-panel p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 relative overflow-hidden">
           <div className="flex justify-between items-center">
             <span className="text-[9px] font-extrabold uppercase tracking-wider text-rose-400 block">
-              Pending Due (à¤‰à¤§à¤¾à¤°à¥€)
+              Pending Due (उधारी)
             </span>
             {kpis.dueCollectionToday > 0 ? (
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
@@ -532,8 +565,8 @@ export const PaymentsView = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredPayments.map((p) => (
-                <TableRow key={p.id}>
+              filteredPayments.map((p, idx) => (
+                <TableRow key={`${p.id}_${idx}`}>
                   <TableCell className="text-xs text-slate-400">
                     {formatDate(p.date)} • {formatTime(p.date)}
                   </TableCell>
@@ -627,9 +660,9 @@ export const PaymentsView = () => {
             Koi payment ya due record nahi mila.
           </div>
         ) : (
-          filteredPayments.map((p) => (
+          filteredPayments.map((p, idx) => (
             <div
-              key={p.id}
+              key={`${p.id}_${idx}`}
               onClick={() => {
                 const matched = bills.find((b) => b.invoiceNo === p.invoiceNo);
                 if (matched) setSelectedPaymentBill(matched);
