@@ -45,6 +45,7 @@ export const BillingForm: React.FC = () => {
     updateCartQuantity,
     updateCartItemPrice,
     updateCartItemTaxRate,
+    updateCartItemMeasurement,
     applyGlobalGstRate,
     removeFromCart,
     clearCart,
@@ -260,6 +261,7 @@ export const BillingForm: React.FC = () => {
               onUpdateQty={updateCartQuantity}
               onUpdatePrice={updateCartItemPrice}
               onUpdateTaxRate={updateCartItemTaxRate}
+              onUpdateMeasurement={updateCartItemMeasurement}
               onRemove={removeFromCart}
               onClearCart={clearCart}
             />

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Bill, BillItem, PaymentMethod, BillTemplateId } from "@/types/bill";
+import { Bill, BillItem, PaymentMethod, BillTemplateId, MeasurementUnit } from "@/types/bill";
 import { Product } from "@/types/product";
 import { INITIAL_BILLS } from "@/data/demo-bills";
 import { calculateInvoice } from "@/lib/invoice";
@@ -23,6 +23,7 @@ interface BillingStore {
   updateCartItemPrice: (productId: string, price: number) => void;
   updateCartItemDiscount: (productId: string, discount: number, discountType: 'percentage' | 'fixed') => void;
   updateCartItemTaxRate: (productId: string, taxRate: number) => void;
+  updateCartItemMeasurement: (productId: string, value: number | undefined, unit: MeasurementUnit) => void;
   applyGlobalGstRate: (taxRate: number) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
@@ -204,6 +205,15 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
       });
       return { cart: updatedCart };
     }),
+
+  updateCartItemMeasurement: (productId, value, unit) =>
+    set((state) => ({
+      cart: state.cart.map((item) =>
+        item.productId === productId
+          ? { ...item, measurementValue: value, measurementUnit: unit }
+          : item
+      ),
+    })),
 
   applyGlobalGstRate: (taxRate) =>
     set((state) => {

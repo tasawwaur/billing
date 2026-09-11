@@ -11,6 +11,8 @@ export type BillTemplateId =
   | 'thermal80'
   | 'thermal58';
 
+export type MeasurementUnit = 'SQM' | 'Meter' | 'Feet';
+
 export interface BillItem {
   productId: string;
   productName: string;
@@ -23,6 +25,8 @@ export interface BillItem {
   taxRate: number;
   taxAmount: number;
   total: number;
+  measurementValue?: number;   // e.g. 0.77 (per piece)
+  measurementUnit?: MeasurementUnit; // SQM | Meter | Feet
 }
 
 export interface BillCalculation {

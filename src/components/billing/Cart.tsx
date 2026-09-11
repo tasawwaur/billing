@@ -4,12 +4,14 @@ import React from "react";
 import { BillItem } from "@/types/bill";
 import { CartItemRow } from "./CartItem";
 import { ShoppingBag, Trash2 } from "lucide-react";
+import { MeasurementUnit } from "@/types/bill";
 
 interface CartProps {
   items: BillItem[];
   onUpdateQty: (productId: string, quantity: number) => void;
   onUpdatePrice?: (productId: string, price: number) => void;
   onUpdateTaxRate?: (productId: string, taxRate: number) => void;
+  onUpdateMeasurement?: (productId: string, value: number | undefined, unit: MeasurementUnit) => void;
   onRemove: (productId: string) => void;
   onClearCart: () => void;
 }
@@ -19,6 +21,7 @@ export const Cart: React.FC<CartProps> = ({
   onUpdateQty,
   onUpdatePrice,
   onUpdateTaxRate,
+  onUpdateMeasurement,
   onRemove,
   onClearCart,
 }) => {
@@ -57,6 +60,7 @@ export const Cart: React.FC<CartProps> = ({
             onUpdateQty={onUpdateQty}
             onUpdatePrice={onUpdatePrice}
             onUpdateTaxRate={onUpdateTaxRate}
+            onUpdateMeasurement={onUpdateMeasurement}
             onRemove={onRemove}
           />
         ))}

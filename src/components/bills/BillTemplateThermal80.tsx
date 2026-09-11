@@ -9,6 +9,11 @@ interface BillTemplateProps {
 }
 
 export const BillTemplateThermal80: React.FC<BillTemplateProps> = ({ bill, settings }) => {
+  // Check if any item has measurement data
+  const hasMeasurement = bill.items.some(
+    (item) => item.measurementValue && item.measurementValue > 0
+  );
+
   return (
     <div id="printable-bill-area" className="w-[300px] mx-auto bg-white text-slate-900 p-4 font-mono text-[11px] leading-tight border border-slate-300 shadow-md">
       {/* Center Header */}
@@ -37,17 +42,29 @@ export const BillTemplateThermal80: React.FC<BillTemplateProps> = ({ bill, setti
           <tr className="border-b border-slate-900 font-bold">
             <th className="py-1">ITEM</th>
             <th className="py-1 text-center">QTY</th>
+            {hasMeasurement && <th className="py-1 text-center">MEAS.</th>}
             <th className="py-1 text-right">AMT</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200">
-          {bill.items.map((item, idx) => (
-            <tr key={idx}>
-              <td className="py-1 max-w-[140px] truncate">{item.productName}</td>
-              <td className="py-1 text-center">{item.quantity}</td>
-              <td className="py-1 text-right font-semibold">{formatCurrency(item.total)}</td>
-            </tr>
-          ))}
+          {bill.items.map((item, idx) => {
+            const totalMeas =
+              item.measurementValue && item.measurementValue > 0
+                ? (item.quantity * item.measurementValue).toFixed(2)
+                : null;
+            return (
+              <tr key={idx}>
+                <td className="py-1 max-w-[110px] truncate">{item.productName}</td>
+                <td className="py-1 text-center">{item.quantity}</td>
+                {hasMeasurement && (
+                  <td className="py-1 text-center font-semibold">
+                    {totalMeas ? `${totalMeas} ${item.measurementUnit ?? "SQM"}` : "—"}
+                  </td>
+                )}
+                <td className="py-1 text-right font-semibold">{formatCurrency(item.total)}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
@@ -82,8 +99,6 @@ export const BillTemplateThermal80: React.FC<BillTemplateProps> = ({ bill, setti
           </div>
         )}
       </div>
-
-
 
       <div className="text-center pt-1 text-[9px]">
         <p className="font-bold">THANK YOU FOR YOUR VISIT!</p>

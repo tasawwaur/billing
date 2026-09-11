@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BillItem } from "@/types/bill";
+import { BillItem, MeasurementUnit } from "@/types/bill";
 import { Plus, Minus, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 
@@ -10,16 +10,26 @@ interface CartItemProps {
   onUpdateQty: (productId: string, quantity: number) => void;
   onUpdatePrice?: (productId: string, price: number) => void;
   onUpdateTaxRate?: (productId: string, taxRate: number) => void;
+  onUpdateMeasurement?: (productId: string, value: number | undefined, unit: MeasurementUnit) => void;
   onRemove: (productId: string) => void;
 }
+
+const UNITS: MeasurementUnit[] = ["SQM", "Meter", "Feet"];
 
 export const CartItemRow: React.FC<CartItemProps> = ({
   item,
   onUpdateQty,
   onUpdatePrice,
   onUpdateTaxRate,
+  onUpdateMeasurement,
   onRemove,
 }) => {
+  const currentUnit: MeasurementUnit = item.measurementUnit ?? "SQM";
+  const totalMeasurement =
+    item.measurementValue && item.measurementValue > 0
+      ? (item.quantity * item.measurementValue).toFixed(2)
+      : null;
+
   return (
     <div className="p-2.5 rounded-xl bg-obsidian-900/90 border border-gold-500/10 hover:border-gold-500/30 transition-all text-xs space-y-2">
       {/* Top Row: Product Name, Total Amount & Remove Button */}
@@ -136,6 +146,56 @@ export const CartItemRow: React.FC<CartItemProps> = ({
             <Plus className="w-3.5 h-3.5" />
           </button>
         </div>
+      </div>
+
+      {/* Measurement Row: Value input + Unit selector + Auto total */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Value per piece input */}
+        <div className="flex items-center gap-1 bg-obsidian-950 px-1.5 py-0.5 rounded border border-amber-500/30 text-slate-200">
+          <span className="text-[9px] font-bold text-amber-400 whitespace-nowrap">per pc:</span>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            value={item.measurementValue ?? ""}
+            placeholder="0.00"
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => {
+              const val = e.target.value === "" ? undefined : parseFloat(e.target.value);
+              onUpdateMeasurement?.(item.productId, val, currentUnit);
+            }}
+            className="w-14 bg-transparent text-xs font-bold text-amber-200 focus:outline-none focus:text-amber-100"
+            title="Enter measurement per piece (e.g. 0.77 SQM per panel)"
+          />
+        </div>
+
+        {/* Unit selector: SQM / Meter / Feet */}
+        <div className="flex items-center gap-0.5 bg-obsidian-950 rounded border border-amber-500/20 overflow-hidden">
+          {UNITS.map((u) => (
+            <button
+              key={u}
+              type="button"
+              onClick={() =>
+                onUpdateMeasurement?.(item.productId, item.measurementValue, u)
+              }
+              className={`px-1.5 py-0.5 text-[9px] font-extrabold transition-colors ${
+                currentUnit === u
+                  ? "bg-amber-500 text-obsidian-950"
+                  : "text-slate-400 hover:text-amber-300 hover:bg-amber-500/10"
+              }`}
+              title={`Set unit to ${u}`}
+            >
+              {u}
+            </button>
+          ))}
+        </div>
+
+        {/* Auto-calculated total measurement display */}
+        {totalMeasurement && (
+          <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded">
+            = {totalMeasurement} {currentUnit}
+          </span>
+        )}
       </div>
     </div>
   );
