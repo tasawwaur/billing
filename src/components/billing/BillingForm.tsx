@@ -27,6 +27,7 @@ import {
   ShoppingCart,
   Share,
   ArrowRight,
+  Truck,
 } from "lucide-react";
 import { sendInvoiceWhatsApp, openWhatsAppDirect, shareInvoiceJpgDirect } from "@/lib/whatsapp";
 import { copyInvoiceImageToClipboard, downloadInvoiceAsImage } from "@/lib/image-export";
@@ -60,12 +61,19 @@ export const BillingForm: React.FC = () => {
     paidAmountInput,
     setPaidAmountInput,
     saveCurrentBill,
+    transportVehicleNo,
+    transportLrNo,
+    transportName,
+    transportDestination,
+    transportFreightTerms,
+    setTransportDetails,
   } = useBillingStore();
 
   const [generatedBill, setGeneratedBill] = useState<Bill | null>(null);
   const [isJpgCopied, setIsJpgCopied] = useState(false);
   const [mobileTab, setMobileTab] = useState<"catalog" | "cart">("catalog");
   const [isMobile, setIsMobile] = useState(false);
+  const [showTransport, setShowTransport] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -282,7 +290,92 @@ export const BillingForm: React.FC = () => {
                   paidAmountInput={paidAmountInput}
                   onChangePaidAmount={setPaidAmountInput}
                 />
+
+                {/* Transport / Vehicle Details (Optional) */}
+                <div className="rounded-xl border border-gold-500/15 bg-obsidian-900/40 overflow-hidden">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-bold text-gold-400 hover:text-gold-300 transition-colors"
+                    onClick={() => setShowTransport((v) => !v)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Truck className="w-3.5 h-3.5" />
+                      Transport / Vehicle Details
+                      <span className="text-slate-500 font-normal">(Optional)</span>
+                    </span>
+                    <span className="text-slate-400">{showTransport ? "▲" : "▼"}</span>
+                  </button>
+                  {showTransport && (
+                    <div className="px-3.5 pb-3.5 space-y-2 border-t border-gold-500/10 pt-2.5">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Vehicle No.</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. UP14AB1234"
+                            value={transportVehicleNo}
+                            onChange={(e) => setTransportDetails({ vehicleNo: e.target.value })}
+                            className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">LR / Bilty No.</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 1176"
+                            value={transportLrNo}
+                            onChange={(e) => setTransportDetails({ lrNo: e.target.value })}
+                            className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Transport Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Sharma Transport"
+                            value={transportName}
+                            onChange={(e) => setTransportDetails({ name: e.target.value })}
+                            className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Destination</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Saharanpur"
+                            value={transportDestination}
+                            onChange={(e) => setTransportDetails({ destination: e.target.value })}
+                            className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Freight Terms</label>
+                        <div className="flex gap-2">
+                          {["To Pay", "Paid", "To Be Billed"].map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setTransportDetails({ freightTerms: opt })}
+                              className={`flex-1 text-[10px] font-bold py-1.5 rounded-lg border transition-all ${
+                                transportFreightTerms === opt
+                                  ? "bg-gold-500 text-obsidian-950 border-gold-500"
+                                  : "bg-obsidian-900 text-slate-400 border-gold-500/20 hover:text-slate-200"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <BillSummary calculation={calculation} />
+
 
                 <Button
                   variant="gold"

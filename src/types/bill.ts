@@ -65,4 +65,10 @@ export interface Bill {
   templateId: BillTemplateId;
   notes?: string;
   createdAt: string;
+  // Transport / Vehicle Details (optional)
+  transportVehicleNo?: string;
+  transportLrNo?: string;
+  transportName?: string;
+  transportDestination?: string;
+  transportFreightTerms?: string;
 }

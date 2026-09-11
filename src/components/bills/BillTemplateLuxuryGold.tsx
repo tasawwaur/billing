@@ -1,4 +1,5 @@
 import React from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { Bill } from "@/types/bill";
 import { StoreSettings } from "@/types/store";
 import { formatCurrency, formatDate } from "@/lib/currency";
@@ -10,6 +11,53 @@ interface BillTemplateProps {
 
 export const BillTemplateLuxuryGold: React.FC<BillTemplateProps> = ({ bill, settings }) => {
   const totalQuantity = bill.items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Bill data base64 encode karo — kisi bhi phone pe scan karo, kaam karega
+  const compactBill = {
+    inv: bill.invoiceNo,
+    store: settings.storeName,
+    addr: settings.address,
+    phone: settings.phone,
+    gstin: settings.gstin || "",
+    cust: bill.customerName,
+    custPhone: bill.customerPhone,
+    date: bill.date,
+    method: bill.paymentMethod,
+    status: bill.paymentStatus,
+    subtotal: bill.calculation.subtotal,
+    tax: bill.calculation.totalTax,
+    total: bill.calculation.grandTotal,
+    paid: bill.calculation.paidAmount,
+    due: bill.calculation.dueAmount,
+    items: bill.items.map((i) => ({
+      n: i.productName,
+      q: i.quantity,
+      u: i.unit,
+      p: i.price,
+      tax: i.taxRate,
+      t: i.total,
+      ...(i.measurementValue ? { mVal: i.measurementValue, mUnit: i.measurementUnit } : {}),
+    })),
+    ...(bill.transportVehicleNo || bill.transportLrNo ? {
+      transport: {
+        veh: bill.transportVehicleNo,
+        lr: bill.transportLrNo,
+        name: bill.transportName,
+        dest: bill.transportDestination,
+        freight: bill.transportFreightTerms,
+      }
+    } : {}),
+  };
+
+  const base64Data = typeof window !== "undefined"
+    ? btoa(unescape(encodeURIComponent(JSON.stringify(compactBill))))
+    : "";
+
+  const baseUrl = typeof window !== "undefined"
+    ? `${window.location.protocol}//${window.location.host}`
+    : "https://billing-eosin-eta.vercel.app";
+
+  const qrUrl = `${baseUrl}/invoice/${encodeURIComponent(bill.invoiceNo)}?d=${base64Data}`;
 
   return (
     <div id="printable-bill-area" className="w-[800px] min-w-[800px] mx-auto bg-white text-slate-900 p-6 shadow-2xl font-sans rounded-xl border-2 border-[#d4af37]">
@@ -42,7 +90,7 @@ export const BillTemplateLuxuryGold: React.FC<BillTemplateProps> = ({ bill, sett
             </div>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right flex flex-col items-end gap-1">
           <span className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded uppercase tracking-wider mb-1 ${
             bill.isReturn ? "bg-rose-900 text-rose-200" : "bg-[#0b0f17] text-[#d4af37]"
           }`}>
@@ -54,6 +102,11 @@ export const BillTemplateLuxuryGold: React.FC<BillTemplateProps> = ({ bill, sett
           )}
           <p className="text-[11px] text-slate-500 mt-0.5">Date: {formatDate(bill.date)}</p>
           <p className="text-[11px] font-semibold text-slate-700">Mode: {bill.isReturn ? `Return (${bill.returnAdjustmentMode || "ADJUST_DUE"})` : bill.paymentMethod}</p>
+          {/* QR Code */}
+          <div className="mt-1.5 border border-[#d4af37]/40 rounded-lg p-1.5 bg-white">
+            <QRCodeSVG value={qrUrl} size={72} level="M" />
+            <p className="text-[8px] text-slate-400 text-center mt-0.5 font-mono">Scan for details</p>
+          </div>
         </div>
       </div>
 
@@ -73,6 +126,30 @@ export const BillTemplateLuxuryGold: React.FC<BillTemplateProps> = ({ bill, sett
           </span>
         </div>
       </div>
+
+      {/* Transport / Vehicle Details - only if present */}
+      {(bill.transportVehicleNo || bill.transportLrNo || bill.transportName || bill.transportDestination || bill.transportFreightTerms) && (
+        <div className="bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 mb-3 text-[10px] text-slate-700">
+          <p className="font-bold text-[#785816] uppercase tracking-wider mb-1.5 text-[9px]">Transport / Delivery Details:</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1">
+            {bill.transportVehicleNo && (
+              <span><span className="text-slate-400 font-semibold">Vehicle No:</span> <span className="font-bold text-slate-800">{bill.transportVehicleNo}</span></span>
+            )}
+            {bill.transportLrNo && (
+              <span><span className="text-slate-400 font-semibold">LR / Bilty No:</span> <span className="font-bold text-slate-800">{bill.transportLrNo}</span></span>
+            )}
+            {bill.transportName && (
+              <span><span className="text-slate-400 font-semibold">Transport:</span> <span className="font-bold text-slate-800">{bill.transportName}</span></span>
+            )}
+            {bill.transportDestination && (
+              <span><span className="text-slate-400 font-semibold">Destination:</span> <span className="font-bold text-slate-800">{bill.transportDestination}</span></span>
+            )}
+            {bill.transportFreightTerms && (
+              <span><span className="text-slate-400 font-semibold">Freight:</span> <span className="font-bold text-slate-800">{bill.transportFreightTerms}</span></span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Items Table - Clean & Compact */}
       <table className="w-full text-left text-xs mb-3 border-collapse">

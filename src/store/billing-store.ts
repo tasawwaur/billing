@@ -16,7 +16,21 @@ interface BillingStore {
   orderDiscountPercent: number;
   paymentMethod: PaymentMethod;
   paidAmountInput: number | null;
-  
+  // Transport Details (optional)
+  transportVehicleNo: string;
+  transportLrNo: string;
+  transportName: string;
+  transportDestination: string;
+  transportFreightTerms: string;
+  setTransportDetails: (details: {
+    vehicleNo?: string;
+    lrNo?: string;
+    name?: string;
+    destination?: string;
+    freightTerms?: string;
+  }) => void;
+  clearTransportDetails: () => void;
+
   // Cart Actions
   addToCart: (product: Product, quantity?: number) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
@@ -76,6 +90,23 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
   orderDiscountPercent: 0,
   paymentMethod: "UPI",
   paidAmountInput: null,
+  transportVehicleNo: "",
+  transportLrNo: "",
+  transportName: "",
+  transportDestination: "",
+  transportFreightTerms: "",
+
+  setTransportDetails: ({ vehicleNo, lrNo, name, destination, freightTerms }) =>
+    set((state) => ({
+      transportVehicleNo: vehicleNo ?? state.transportVehicleNo,
+      transportLrNo: lrNo ?? state.transportLrNo,
+      transportName: name ?? state.transportName,
+      transportDestination: destination ?? state.transportDestination,
+      transportFreightTerms: freightTerms ?? state.transportFreightTerms,
+    })),
+
+  clearTransportDetails: () =>
+    set({ transportVehicleNo: "", transportLrNo: "", transportName: "", transportDestination: "", transportFreightTerms: "" }),
 
   addToCart: (product, quantity = 1) =>
     set((state) => {
@@ -250,7 +281,8 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
   setPaidAmountInput: (amount) => set({ paidAmountInput: amount }),
 
   saveCurrentBill: (templateId = "thermal80") => {
-    const { cart, selectedCustomerId, selectedCustomerName, selectedCustomerPhone, orderDiscountPercent, paymentMethod, paidAmountInput, bills } = get();
+    const { cart, selectedCustomerId, selectedCustomerName, selectedCustomerPhone, orderDiscountPercent, paymentMethod, paidAmountInput, bills,
+      transportVehicleNo, transportLrNo, transportName, transportDestination, transportFreightTerms } = get();
     if (cart.length === 0) return null;
 
     const effectivePaid =
@@ -286,6 +318,12 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
       paymentStatus: status,
       templateId: templateId as BillTemplateId,
       createdAt: nowStr,
+      // Save transport details only if filled
+      ...(transportVehicleNo && { transportVehicleNo }),
+      ...(transportLrNo && { transportLrNo }),
+      ...(transportName && { transportName }),
+      ...(transportDestination && { transportDestination }),
+      ...(transportFreightTerms && { transportFreightTerms }),
     };
 
     const updatedBills = [newBill, ...bills];
@@ -298,6 +336,12 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
       selectedCustomerId: "",
       selectedCustomerName: "",
       selectedCustomerPhone: "",
+      // Transport clear after bill save
+      transportVehicleNo: "",
+      transportLrNo: "",
+      transportName: "",
+      transportDestination: "",
+      transportFreightTerms: "",
     });
     return newBill;
   },
