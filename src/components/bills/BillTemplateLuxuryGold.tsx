@@ -12,6 +12,11 @@ interface BillTemplateProps {
 export const BillTemplateLuxuryGold: React.FC<BillTemplateProps> = ({ bill, settings }) => {
   const totalQuantity = bill.items.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Check karo ki kisi item mein measurement hai ya nahi
+  const hasMeasurement = bill.items.some(
+    (item) => item.measurementValue && item.measurementValue > 0
+  );
+
   // Bill data base64 encode karo — kisi bhi phone pe scan karo, kaam karega
   const compactBill = {
     inv: bill.invoiceNo,
@@ -158,25 +163,36 @@ export const BillTemplateLuxuryGold: React.FC<BillTemplateProps> = ({ bill, sett
             <th className="py-2 px-2.5 w-8">#</th>
             <th className="py-2 px-2.5">Item Description</th>
             <th className="py-2 px-2.5 text-right w-20">Qty</th>
+            {hasMeasurement && <th className="py-2 px-2.5 text-right w-28">Measurement</th>}
             <th className="py-2 px-2.5 text-right w-24">Price</th>
             <th className="py-2 px-2.5 text-right w-20">GST</th>
             <th className="py-2 px-2.5 text-right w-28">Total</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 text-slate-800">
-          {bill.items.map((item, idx) => (
-            <tr key={idx} className="hover:bg-slate-50/50">
-              <td className="py-1.5 px-2.5 text-slate-400 font-mono">{idx + 1}</td>
-              <td className="py-1.5 px-2.5 font-medium">
-                <span className="font-bold text-slate-900">{item.productName}</span>
-                {item.sku && <span className="text-[10px] text-slate-400 ml-2">SKU: {item.sku}</span>}
-              </td>
-              <td className="py-1.5 px-2.5 text-right font-semibold">{item.quantity} {item.unit}</td>
-              <td className="py-1.5 px-2.5 text-right font-mono">{formatCurrency(item.price)}</td>
-              <td className="py-1.5 px-2.5 text-right font-mono">{item.taxRate}%</td>
-              <td className="py-1.5 px-2.5 text-right font-bold text-slate-900 font-mono">{formatCurrency(item.total)}</td>
-            </tr>
-          ))}
+          {bill.items.map((item, idx) => {
+            const totalMeas = item.measurementValue && item.measurementValue > 0
+              ? (item.quantity * item.measurementValue).toFixed(2)
+              : null;
+            return (
+              <tr key={idx} className="hover:bg-slate-50/50">
+                <td className="py-1.5 px-2.5 text-slate-400 font-mono">{idx + 1}</td>
+                <td className="py-1.5 px-2.5 font-medium">
+                  <span className="font-bold text-slate-900">{item.productName}</span>
+                  {item.sku && <span className="text-[10px] text-slate-400 ml-2">SKU: {item.sku}</span>}
+                </td>
+                <td className="py-1.5 px-2.5 text-right font-semibold">{item.quantity} {item.unit}</td>
+                {hasMeasurement && (
+                  <td className="py-1.5 px-2.5 text-right font-semibold text-[#926f1a]">
+                    {totalMeas ? `${totalMeas} ${item.measurementUnit ?? "SQM"}` : "—"}
+                  </td>
+                )}
+                <td className="py-1.5 px-2.5 text-right font-mono">{formatCurrency(item.price)}</td>
+                <td className="py-1.5 px-2.5 text-right font-mono">{item.taxRate}%</td>
+                <td className="py-1.5 px-2.5 text-right font-bold text-slate-900 font-mono">{formatCurrency(item.total)}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
