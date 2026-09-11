@@ -68,6 +68,15 @@ export const BillingForm: React.FC = () => {
     transportDestination,
     transportFreightTerms,
     setTransportDetails,
+    eInvoiceAckNo,
+    eWayBillNo,
+    eWayBillValidTill,
+    setEInvoiceDetails,
+    bankAccountName,
+    bankName,
+    bankAccountNo,
+    bankIfscCode,
+    setBankDetails,
   } = useBillingStore();
 
   const [generatedBill, setGeneratedBill] = useState<Bill | null>(null);
@@ -75,6 +84,8 @@ export const BillingForm: React.FC = () => {
   const [mobileTab, setMobileTab] = useState<"catalog" | "cart">("catalog");
   const [isMobile, setIsMobile] = useState(false);
   const [showTransport, setShowTransport] = useState(false);
+  const [showEInvoice, setShowEInvoice] = useState(false);
+  const [showBank, setShowBank] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -375,8 +386,120 @@ export const BillingForm: React.FC = () => {
                   )}
                 </div>
 
-                <BillSummary calculation={calculation} />
+                {/* E-Invoice & E-Way Bill (Optional) */}
+                <div className="rounded-xl border border-gold-500/15 bg-obsidian-900/40 overflow-hidden">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-bold text-gold-400 hover:text-gold-300 transition-colors"
+                    onClick={() => setShowEInvoice((v) => !v)}
+                  >
+                    <span className="flex items-center gap-2">
+                      📋 E-Invoice / E-Way Bill
+                      <span className="text-slate-500 font-normal">(Optional)</span>
+                    </span>
+                    <span className="text-slate-400">{showEInvoice ? "▲" : "▼"}</span>
+                  </button>
+                  {showEInvoice && (
+                    <div className="px-3.5 pb-3.5 space-y-2 border-t border-gold-500/10 pt-2.5">
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Acknowledgement No. (IRN Ack No.)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 132628652604656"
+                          value={eInvoiceAckNo}
+                          onChange={(e) => setEInvoiceDetails({ ackNo: e.target.value })}
+                          className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">E-Way Bill No.</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 312325864287"
+                            value={eWayBillNo}
+                            onChange={(e) => setEInvoiceDetails({ wayBillNo: e.target.value })}
+                            className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Valid Till</label>
+                          <input
+                            type="date"
+                            value={eWayBillValidTill}
+                            onChange={(e) => setEInvoiceDetails({ validTill: e.target.value })}
+                            className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
+                {/* Bank Account Details (Optional) */}
+                <div className="rounded-xl border border-gold-500/15 bg-obsidian-900/40 overflow-hidden">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-bold text-gold-400 hover:text-gold-300 transition-colors"
+                    onClick={() => setShowBank((v) => !v)}
+                  >
+                    <span className="flex items-center gap-2">
+                      🏦 Bank Account Details
+                      <span className="text-slate-500 font-normal">(Optional)</span>
+                    </span>
+                    <span className="text-slate-400">{showBank ? "▲" : "▼"}</span>
+                  </button>
+                  {showBank && (
+                    <div className="px-3.5 pb-3.5 space-y-2 border-t border-gold-500/10 pt-2.5">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Account Holder Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Rajdhani Home Decor"
+                            value={bankAccountName}
+                            onChange={(e) => setBankDetails({ accountName: e.target.value })}
+                            className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Bank Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. HDFC Bank"
+                            value={bankName}
+                            onChange={(e) => setBankDetails({ bankName: e.target.value })}
+                            className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Account No.</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 50200054099981"
+                            value={bankAccountNo}
+                            onChange={(e) => setBankDetails({ accountNo: e.target.value })}
+                            className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">IFSC Code</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. HDFC0001393"
+                            value={bankIfscCode}
+                            onChange={(e) => setBankDetails({ ifscCode: e.target.value })}
+                            className="w-full bg-obsidian-900 border border-gold-500/20 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <BillSummary calculation={calculation} />
 
                 <Button
                   variant="gold"

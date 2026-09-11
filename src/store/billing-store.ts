@@ -30,6 +30,19 @@ interface BillingStore {
     freightTerms?: string;
   }) => void;
   clearTransportDetails: () => void;
+  // E-Invoice & E-Way Bill (optional)
+  eInvoiceAckNo: string;
+  eWayBillNo: string;
+  eWayBillValidTill: string;
+  setEInvoiceDetails: (details: { ackNo?: string; wayBillNo?: string; validTill?: string }) => void;
+  clearEInvoiceDetails: () => void;
+  // Bank Account Details (optional)
+  bankAccountName: string;
+  bankName: string;
+  bankAccountNo: string;
+  bankIfscCode: string;
+  setBankDetails: (details: { accountName?: string; bankName?: string; accountNo?: string; ifscCode?: string }) => void;
+  clearBankDetails: () => void;
 
   // Cart Actions
   addToCart: (product: Product, quantity?: number) => void;
@@ -107,6 +120,32 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
 
   clearTransportDetails: () =>
     set({ transportVehicleNo: "", transportLrNo: "", transportName: "", transportDestination: "", transportFreightTerms: "" }),
+
+  eInvoiceAckNo: "",
+  eWayBillNo: "",
+  eWayBillValidTill: "",
+  setEInvoiceDetails: ({ ackNo, wayBillNo, validTill }) =>
+    set((state) => ({
+      eInvoiceAckNo: ackNo ?? state.eInvoiceAckNo,
+      eWayBillNo: wayBillNo ?? state.eWayBillNo,
+      eWayBillValidTill: validTill ?? state.eWayBillValidTill,
+    })),
+  clearEInvoiceDetails: () =>
+    set({ eInvoiceAckNo: "", eWayBillNo: "", eWayBillValidTill: "" }),
+
+  bankAccountName: "",
+  bankName: "",
+  bankAccountNo: "",
+  bankIfscCode: "",
+  setBankDetails: ({ accountName, bankName, accountNo, ifscCode }) =>
+    set((state) => ({
+      bankAccountName: accountName ?? state.bankAccountName,
+      bankName: bankName ?? state.bankName,
+      bankAccountNo: accountNo ?? state.bankAccountNo,
+      bankIfscCode: ifscCode ?? state.bankIfscCode,
+    })),
+  clearBankDetails: () =>
+    set({ bankAccountName: "", bankName: "", bankAccountNo: "", bankIfscCode: "" }),
 
   addToCart: (product, quantity = 1) =>
     set((state) => {
@@ -282,7 +321,9 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
 
   saveCurrentBill: (templateId = "thermal80") => {
     const { cart, selectedCustomerId, selectedCustomerName, selectedCustomerPhone, orderDiscountPercent, paymentMethod, paidAmountInput, bills,
-      transportVehicleNo, transportLrNo, transportName, transportDestination, transportFreightTerms } = get();
+      transportVehicleNo, transportLrNo, transportName, transportDestination, transportFreightTerms,
+      eInvoiceAckNo, eWayBillNo, eWayBillValidTill,
+      bankAccountName, bankName, bankAccountNo, bankIfscCode } = get();
     if (cart.length === 0) return null;
 
     const effectivePaid =
@@ -324,6 +365,15 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
       ...(transportName && { transportName }),
       ...(transportDestination && { transportDestination }),
       ...(transportFreightTerms && { transportFreightTerms }),
+      // Save e-invoice & e-way bill only if filled
+      ...(eInvoiceAckNo && { eInvoiceAckNo }),
+      ...(eWayBillNo && { eWayBillNo }),
+      ...(eWayBillValidTill && { eWayBillValidTill }),
+      // Save bank details only if filled
+      ...(bankAccountName && { bankAccountName }),
+      ...(bankName && { bankName }),
+      ...(bankAccountNo && { bankAccountNo }),
+      ...(bankIfscCode && { bankIfscCode }),
     };
 
     const updatedBills = [newBill, ...bills];
@@ -336,12 +386,21 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
       selectedCustomerId: "",
       selectedCustomerName: "",
       selectedCustomerPhone: "",
-      // Transport clear after bill save
+      // Clear transport after save
       transportVehicleNo: "",
       transportLrNo: "",
       transportName: "",
       transportDestination: "",
       transportFreightTerms: "",
+      // Clear e-invoice after save
+      eInvoiceAckNo: "",
+      eWayBillNo: "",
+      eWayBillValidTill: "",
+      // Clear bank after save
+      bankAccountName: "",
+      bankName: "",
+      bankAccountNo: "",
+      bankIfscCode: "",
     });
     return newBill;
   },

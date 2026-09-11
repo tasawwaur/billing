@@ -71,4 +71,13 @@ export interface Bill {
   transportName?: string;
   transportDestination?: string;
   transportFreightTerms?: string;
+  // E-Invoice & E-Way Bill Details (optional)
+  eInvoiceAckNo?: string;
+  eWayBillNo?: string;
+  eWayBillValidTill?: string;
+  // Bank Account Details (optional)
+  bankAccountName?: string;
+  bankName?: string;
+  bankAccountNo?: string;
+  bankIfscCode?: string;
 }

@@ -258,6 +258,45 @@ export const BillTemplateLuxuryGold: React.FC<BillTemplateProps> = ({ bill, sett
         </div>
       </div>
 
+      {/* E-Invoice & E-Way Bill Details — only Luxury Gold */}
+      {(bill.eInvoiceAckNo || bill.eWayBillNo) && (
+        <div className="mt-3 pt-2.5 border-t border-slate-200">
+          <p className="text-[9px] font-bold text-[#785816] uppercase tracking-wider mb-1.5">E-Invoice / E-Way Bill Details:</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[10px] text-slate-700">
+            {bill.eInvoiceAckNo && (
+              <span><span className="text-slate-400 font-semibold">Ack No:</span> <span className="font-bold font-mono text-slate-800">{bill.eInvoiceAckNo}</span></span>
+            )}
+            {bill.eWayBillNo && (
+              <span><span className="text-slate-400 font-semibold">E-Way Bill No:</span> <span className="font-bold font-mono text-slate-800">{bill.eWayBillNo}</span></span>
+            )}
+            {bill.eWayBillValidTill && (
+              <span><span className="text-slate-400 font-semibold">Valid Till:</span> <span className="font-bold text-slate-800">{bill.eWayBillValidTill}</span></span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Bank Account Details — only Luxury Gold */}
+      {(bill.bankAccountNo || bill.bankName) && (
+        <div className="mt-3 pt-2.5 border-t border-slate-200">
+          <p className="text-[9px] font-bold text-[#785816] uppercase tracking-wider mb-1.5">Bank Account Details (Payment via NEFT/RTGS/IMPS):</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[10px] text-slate-700">
+            {bill.bankAccountName && (
+              <span><span className="text-slate-400 font-semibold">A/c Name:</span> <span className="font-bold text-slate-800">{bill.bankAccountName}</span></span>
+            )}
+            {bill.bankName && (
+              <span><span className="text-slate-400 font-semibold">Bank:</span> <span className="font-bold text-slate-800">{bill.bankName}</span></span>
+            )}
+            {bill.bankAccountNo && (
+              <span><span className="text-slate-400 font-semibold">A/c No:</span> <span className="font-bold font-mono text-slate-800">{bill.bankAccountNo}</span></span>
+            )}
+            {bill.bankIfscCode && (
+              <span><span className="text-slate-400 font-semibold">IFSC:</span> <span className="font-bold font-mono text-slate-800">{bill.bankIfscCode}</span></span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Terms & Conditions and Authorized Signatory */}
       {settings.showTermsOnBill && settings.termsAndConditions && (
         <div className="pt-2 border-t border-slate-200 mt-2 flex justify-between items-end text-[10px] text-slate-500">
