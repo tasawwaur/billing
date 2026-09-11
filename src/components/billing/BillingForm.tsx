@@ -16,6 +16,7 @@ import { BillSummary } from "./BillSummary";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { BillTemplateA4 } from "@/components/bills/BillTemplateA4";
+import { BillTemplateLuxuryGold } from "@/components/bills/BillTemplateLuxuryGold";
 import { calculateInvoice } from "@/lib/invoice";
 import {
   Printer,

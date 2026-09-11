@@ -46,7 +46,7 @@ interface SettingsStore {
 
 export const useSettingsStore = create<SettingsStore>((set) => {
   const stored = getStorageItem<StoreSettings>("rajdhani_settings", DEFAULT_SETTINGS);
-  const activeTemplate = (stored && stored.activeTemplate && stored.activeTemplate !== "luxury_gold")
+  const activeTemplate = (stored && stored.activeTemplate)
     ? stored.activeTemplate
     : "thermal80";
 
