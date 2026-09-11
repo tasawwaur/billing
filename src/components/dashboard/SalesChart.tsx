@@ -19,11 +19,16 @@ export const SalesChart: React.FC = () => {
       const dateStr = d.toISOString().split("T")[0];
       const dayName = i === 0 ? "Today" : days[d.getDay()];
 
-      const daySales = bills
-        .filter((b) => b.date.startsWith(dateStr) && b.paymentStatus !== "CANCELLED")
-        .reduce((sum, b) => sum + b.calculation.grandTotal, 0);
+      // Return bills minus honge, add nahi
+      const dayBills = bills.filter(
+        (b) => b.date.startsWith(dateStr) && b.paymentStatus !== "CANCELLED"
+      );
+      const daySales = dayBills.reduce(
+        (sum, b) => b.isReturn ? sum - b.calculation.grandTotal : sum + b.calculation.grandTotal,
+        0
+      );
 
-      data.push({ day: dayName, sales: daySales });
+      data.push({ day: dayName, sales: Math.max(0, daySales) });
       total += daySales;
     }
 
