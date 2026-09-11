@@ -2,20 +2,33 @@
 
 import React, { useState } from "react";
 import { useProductStore } from "@/store/product-store";
+import { Product } from "@/types/product";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
-import { Plus, Search, Package, AlertTriangle } from "lucide-react";
+import { Plus, Search, AlertTriangle, Pencil } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 
 export const ProductsView = () => {
-  const { products, addProduct } = useProductStore();
+  const { products, addProduct, updateProduct } = useProductStore();
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState("All");
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Edit Modal State
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editSku, setEditSku] = useState("");
+  const [editPrice, setEditPrice] = useState(0);
+  const [editCostPrice, setEditCostPrice] = useState(0);
+  const [editStock, setEditStock] = useState(0);
+  const [editMinStock, setEditMinStock] = useState(0);
+  const [editTaxRate, setEditTaxRate] = useState(0);
+  const [editUnit, setEditUnit] = useState("pcs");
 
   // New Product Form State
   const [name, setName] = useState("");
@@ -55,6 +68,37 @@ export const ProductsView = () => {
     setName("");
     setPrice(0);
     setStock(10);
+  };
+
+  // Open Edit Modal with product data pre-filled
+  const openEditModal = (prod: Product) => {
+    setEditingProduct(prod);
+    setEditName(prod.name);
+    setEditCategory(prod.category);
+    setEditSku(prod.sku);
+    setEditPrice(prod.price);
+    setEditCostPrice(prod.costPrice || 0);
+    setEditStock(prod.stock);
+    setEditMinStock(prod.minStockAlert);
+    setEditTaxRate(prod.taxRate);
+    setEditUnit(prod.unit || "pcs");
+  };
+
+  const handleEditSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    updateProduct(editingProduct.id, {
+      name: editName,
+      category: editCategory,
+      sku: editSku,
+      price: Number(editPrice),
+      costPrice: Number(editCostPrice),
+      stock: Number(editStock),
+      minStockAlert: Number(editMinStock),
+      taxRate: Number(editTaxRate),
+      unit: editUnit,
+    });
+    setEditingProduct(null);
   };
 
   return (
@@ -110,6 +154,7 @@ export const ProductsView = () => {
             <TableCell>Tax (GST)</TableCell>
             <TableCell>Stock Level</TableCell>
             <TableCell>Status</TableCell>
+            <TableCell>Edit</TableCell>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -131,6 +176,16 @@ export const ProductsView = () => {
                   ) : (
                     <Badge variant="paid">In Stock</Badge>
                   )}
+                </TableCell>
+                <TableCell>
+                  <button
+                    onClick={() => openEditModal(prod)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gold-500/10 border border-gold-500/30 text-gold-400 hover:bg-gold-500/20 hover:text-gold-300 transition-all text-[11px] font-bold"
+                    title="Edit product"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    Edit
+                  </button>
                 </TableCell>
               </TableRow>
             );
@@ -165,7 +220,41 @@ export const ProductsView = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={!!editingProduct}
+        onClose={() => setEditingProduct(null)}
+        title={`Edit Product — ${editingProduct?.name ?? ""}`}
+      >
+        <form onSubmit={handleEditSave} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Product Name *" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+            <Input label="Category" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="SKU" value={editSku} onChange={(e) => setEditSku(e.target.value)} />
+            <Input label="Unit (pcs/sheet/sqft)" value={editUnit} onChange={(e) => setEditUnit(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Selling Price (₹) *" type="number" value={editPrice || ""} onChange={(e) => setEditPrice(Number(e.target.value))} required />
+            <Input label="Cost Price (₹)" type="number" value={editCostPrice || ""} onChange={(e) => setEditCostPrice(Number(e.target.value))} />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Input label="Stock" type="number" value={editStock} onChange={(e) => setEditStock(Number(e.target.value))} />
+            <Input label="Min Alert" type="number" value={editMinStock} onChange={(e) => setEditMinStock(Number(e.target.value))} />
+            <Input label="GST Rate %" type="number" value={editTaxRate} onChange={(e) => setEditTaxRate(Number(e.target.value))} />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setEditingProduct(null)} className="flex-1">
+              Cancel
+            </Button>
+            <Button variant="gold" type="submit" className="flex-1">
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
-
