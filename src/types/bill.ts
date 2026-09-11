@@ -51,6 +51,8 @@ export interface Bill {
   returnReason?: string;
   returnAdjustmentMode?: 'ADJUST_DUE' | 'CASH_REFUND' | 'STORE_CREDIT';
   originalGrandTotal?: number;
+  returnDuesAdjusted?: number;      // Kitna due minus hua return se
+  returnCustomerDueAtTime?: number; // Return ke waqt customer ka total due kitna tha
   customerId: string;
   customerName: string;
   customerPhone: string;

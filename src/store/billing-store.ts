@@ -45,6 +45,7 @@ interface BillingStore {
     adjustDuesAmount: number;
     cashRefundAmount: number;
     storeCreditAmount: number;
+    customerDueAtTime?: number;
   }) => Bill | null;
   cancelBill: (billId: string) => Bill | null;
   recordBillPayment: (invoiceNo: string, amount: number) => void;
@@ -310,6 +311,7 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
     adjustDuesAmount,
     cashRefundAmount,
     storeCreditAmount,
+    customerDueAtTime,
   }) => {
     const { bills } = get();
     if (!returnedItems || returnedItems.length === 0) return null;
@@ -333,6 +335,8 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
       returnReason: returnReason || "Customer Item Return / Exchange",
       returnAdjustmentMode: adjustmentMode,
       originalGrandTotal: originalBill.calculation.grandTotal,
+      returnDuesAdjusted: adjustDuesAmount,           // Kitna due minus hua
+      returnCustomerDueAtTime: customerDueAtTime ?? 0, // Customer ka due return ke waqt
       customerId: originalBill.customerId,
       customerName: originalBill.customerName,
       customerPhone: originalBill.customerPhone,

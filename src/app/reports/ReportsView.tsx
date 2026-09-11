@@ -13,11 +13,18 @@ export const ReportsView = () => {
   const { products } = useProductStore();
   const [activeTab, setActiveTab] = useState<"sales" | "profit" | "gst" | "stock">("sales");
 
-  const totalSales = bills.reduce((sum, b) => sum + b.calculation.grandTotal, 0);
-  const totalTaxCollected = bills.reduce((sum, b) => sum + b.calculation.totalTax, 0);
+  // Return bills subtract honi chahiye (isReturn = true wali bills minus hongi)
+  const saleBills = bills.filter((b) => !b.isReturn);
+  const returnBills = bills.filter((b) => b.isReturn);
+
+  const totalSales = saleBills.reduce((sum, b) => sum + b.calculation.grandTotal, 0)
+    - returnBills.reduce((sum, b) => sum + b.calculation.grandTotal, 0);
+
+  const totalTaxCollected = saleBills.reduce((sum, b) => sum + b.calculation.totalTax, 0)
+    - returnBills.reduce((sum, b) => sum + b.calculation.totalTax, 0);
   
   // Calculate estimated profit
-  const totalCost = bills.reduce((sum, b) => {
+  const totalCost = saleBills.reduce((sum, b) => {
     return sum + b.items.reduce((iSum, item) => {
       const prod = products.find((p) => p.id === item.productId);
       const cPrice = prod ? prod.costPrice : item.price * 0.7;
@@ -44,7 +51,7 @@ export const ReportsView = () => {
         <div className="glass-panel p-5 rounded-2xl border border-gold-500/20">
           <span className="text-xs font-bold uppercase tracking-wider text-gold-400">Gross Sales Revenue</span>
           <h3 className="text-2xl font-extrabold text-slate-100 gold-gradient-text mt-1">{formatCurrency(totalSales)}</h3>
-          <p className="text-[10px] text-slate-400 mt-2">Across {bills.length} total bills</p>
+          <p className="text-[10px] text-slate-400 mt-2">Across {saleBills.length} sale bills ({returnBills.length} returns deducted)</p>
         </div>
 
         <div className="glass-panel p-5 rounded-2xl border border-emerald-500/20">

@@ -47,10 +47,14 @@ export const DashboardView: React.FC = () => {
   }, [bills, todayStr]);
   
   const todaySalesSum = useMemo(() => {
-    return todayBills.reduce((sum, b) => sum + b.calculation.grandTotal, 0);
+    return todayBills.reduce((sum, b) => {
+      // Return bills subtract honi chahiye, add nahi
+      return b.isReturn ? sum - b.calculation.grandTotal : sum + b.calculation.grandTotal;
+    }, 0);
   }, [todayBills]);
 
-  const todayBillsCount = todayBills.length;
+  // Sirf real sale bills count karo, return bills nahi
+  const todayBillsCount = todayBills.filter((b) => !b.isReturn).length;
 
   const lowStockProducts = useMemo(() => {
     return products.filter((p) => p.stock <= p.minStockAlert);

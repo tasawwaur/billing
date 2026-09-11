@@ -14,6 +14,17 @@ export const BillTemplateThermal80: React.FC<BillTemplateProps> = ({ bill, setti
     (item) => item.measurementValue && item.measurementValue > 0
   );
 
+  // Return bill ke liye DUE balance adjustment calculate karo
+  const isReturn = bill.isReturn === true;
+  const returnAmount = bill.calculation.grandTotal;
+  const customerDueBefore = bill.returnCustomerDueAtTime ?? 0;
+  const duesAdjusted = bill.returnDuesAdjusted ?? 0;
+  const newDueAfterReturn = Math.max(0, customerDueBefore - duesAdjusted);
+  const cashToRefund = bill.returnAdjustmentMode === "CASH_REFUND" ? returnAmount : 0;
+  const excessRefund = duesAdjusted > 0 && returnAmount > customerDueBefore
+    ? returnAmount - customerDueBefore
+    : 0;
+
   return (
     <div id="printable-bill-area" className="w-[300px] mx-auto bg-white text-slate-900 p-4 font-mono text-[11px] leading-tight border border-slate-300 shadow-md">
       {/* Center Header */}
@@ -23,6 +34,19 @@ export const BillTemplateThermal80: React.FC<BillTemplateProps> = ({ bill, setti
         <p className="text-[9px]">TEL: {settings.phone}</p>
         {settings.gstin && <p className="text-[9px]">GSTIN: {settings.gstin}</p>}
       </div>
+
+      {/* Return Bill Badge */}
+      {isReturn && (
+        <div className="text-center mb-2 py-1 border border-dashed border-slate-700">
+          <p className="font-bold text-[10px] uppercase tracking-widest">*** RETURN / CREDIT NOTE ***</p>
+          {bill.parentInvoiceNo && (
+            <p className="text-[9px] text-slate-600">Ref: {bill.parentInvoiceNo}</p>
+          )}
+          {bill.returnReason && (
+            <p className="text-[9px] text-slate-500 italic">Reason: {bill.returnReason}</p>
+          )}
+        </div>
+      )}
 
       {/* Bill Meta */}
       <div className="border-b border-dashed border-slate-900 pb-2 mb-2">
@@ -69,7 +93,7 @@ export const BillTemplateThermal80: React.FC<BillTemplateProps> = ({ bill, setti
       </table>
 
       {/* Totals */}
-      <div className="border-t border-dashed border-slate-900 pt-2 mb-3 space-y-1">
+      <div className="border-t border-dashed border-slate-900 pt-2 mb-2 space-y-1">
         <div className="flex justify-between">
           <span>SUBTOTAL:</span>
           <span>{formatCurrency(bill.calculation.subtotal)}</span>
@@ -81,28 +105,94 @@ export const BillTemplateThermal80: React.FC<BillTemplateProps> = ({ bill, setti
           </div>
         )}
         <div className="flex justify-between text-xs font-bold pt-1 border-t border-slate-900">
-          <span>TOTAL:</span>
+          <span>{isReturn ? "RETURN TOTAL:" : "TOTAL:"}</span>
           <span>{formatCurrency(bill.calculation.grandTotal)}</span>
         </div>
-        <div className="flex justify-between text-[10px]">
-          <span>PAY MODE:</span>
-          <span>{bill.paymentMethod}</span>
-        </div>
-        <div className="flex justify-between text-[10px]">
-          <span>PAID:</span>
-          <span>{formatCurrency(bill.calculation.paidAmount)}</span>
-        </div>
-        {bill.calculation.dueAmount > 0 && (
-          <div className="flex justify-between text-[10px] font-bold text-rose-700">
-            <span>DUE:</span>
-            <span>{formatCurrency(bill.calculation.dueAmount)}</span>
-          </div>
+        {!isReturn && (
+          <>
+            <div className="flex justify-between text-[10px]">
+              <span>PAY MODE:</span>
+              <span>{bill.paymentMethod}</span>
+            </div>
+            <div className="flex justify-between text-[10px]">
+              <span>PAID:</span>
+              <span>{formatCurrency(bill.calculation.paidAmount)}</span>
+            </div>
+            {bill.calculation.dueAmount > 0 && (
+              <div className="flex justify-between text-[10px] font-bold text-rose-700">
+                <span>DUE:</span>
+                <span>{formatCurrency(bill.calculation.dueAmount)}</span>
+              </div>
+            )}
+          </>
         )}
       </div>
 
+      {/* Return Bill: DUE Balance Adjustment Section */}
+      {isReturn && (
+        <div className="border-t border-dashed border-slate-900 pt-2 mb-2 space-y-1">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-600 mb-1">Balance Adjustment:</p>
+
+          {/* Customer ka pehle ka due */}
+          <div className="flex justify-between text-[10px]">
+            <span>PREV. DUE (Before Return):</span>
+            <span className="font-bold text-rose-700">{formatCurrency(customerDueBefore)}</span>
+          </div>
+
+          {/* Return amount */}
+          <div className="flex justify-between text-[10px]">
+            <span>RETURN CREDIT:</span>
+            <span className="font-bold text-emerald-700">- {formatCurrency(returnAmount)}</span>
+          </div>
+
+          <div className="border-t border-slate-400 pt-1 mt-1">
+            {bill.returnAdjustmentMode === "CASH_REFUND" ? (
+              // Cash Refund mode
+              <div className="flex justify-between text-xs font-bold text-emerald-700">
+                <span>CASH TO REFUND:</span>
+                <span>{formatCurrency(cashToRefund)}</span>
+              </div>
+            ) : newDueAfterReturn > 0 ? (
+              // Due still remaining
+              <div className="flex justify-between text-xs font-bold text-rose-700">
+                <span>REMAINING DUE:</span>
+                <span>{formatCurrency(newDueAfterReturn)}</span>
+              </div>
+            ) : excessRefund > 0 ? (
+              // Return > due, extra cash back
+              <>
+                <div className="flex justify-between text-xs font-bold">
+                  <span>DUE CLEARED:</span>
+                  <span className="text-emerald-700">✓ ₹0</span>
+                </div>
+                <div className="flex justify-between text-xs font-bold text-emerald-700">
+                  <span>EXTRA CASH BACK:</span>
+                  <span>{formatCurrency(excessRefund)}</span>
+                </div>
+              </>
+            ) : (
+              // Due exactly cleared
+              <div className="flex justify-between text-xs font-bold text-emerald-700">
+                <span>DUE CLEARED:</span>
+                <span>✓ ₹0 REMAINING</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="text-center pt-1 text-[9px]">
-        <p className="font-bold">THANK YOU FOR YOUR VISIT!</p>
-        <p className="text-[8px] text-slate-500">NO RETURN WITHOUT RECEIPT</p>
+        {isReturn ? (
+          <>
+            <p className="font-bold">RETURN PROCESSED SUCCESSFULLY</p>
+            <p className="text-[8px] text-slate-500">KEEP THIS RECEIPT FOR RECORDS</p>
+          </>
+        ) : (
+          <>
+            <p className="font-bold">THANK YOU FOR YOUR VISIT!</p>
+            <p className="text-[8px] text-slate-500">NO RETURN WITHOUT RECEIPT</p>
+          </>
+        )}
       </div>
     </div>
   );

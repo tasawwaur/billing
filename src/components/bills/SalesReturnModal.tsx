@@ -153,6 +153,7 @@ export const SalesReturnModal: React.FC<SalesReturnModalProps> = ({
         adjustDuesAmount,
         cashRefundAmount,
         storeCreditAmount,
+        customerDueAtTime: customerDueBalance,
       });
 
       if (returnBill) {
